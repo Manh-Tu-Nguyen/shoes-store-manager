@@ -1,0 +1,29 @@
+# --- 1. File của Hệ điều hành (Rác hệ thống) ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- 2. File cấu hình của IntelliJ (Rất quan trọng để chặn) ---
+.idea/
+*.iml
+*.iws
+out/
+
+# --- 3. File cấu hình của VS Code (Nếu bạn hoặc thầy cô dùng) ---
+.vscode/
+*.code-workspace
+
+# --- 4. File Log & Tạm ---
+*.log
+*.tmp
+
+# --- 5. File Backup Database (Để tránh up nhầm file nặng lên git) ---
+*.bak
+*.sql.gz
+
+# --- 6. Lớp bảo vệ thứ 2 (Backup nếu lỡ xóa gitignore con) ---
+# Dòng này giúp chặn folder nặng kể cả khi folder con mất file cấu hình
+**/node_modules/
+**/target/
+**/dist/
+**/.mvn/wrapper/maven-wrapper.properties
