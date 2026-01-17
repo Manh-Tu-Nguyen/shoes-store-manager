@@ -13,6 +13,9 @@ GO
 USE SHOES_STORE_DB;
 GO
 
+-- ======================================================================================
+-- PHẦN 1: TẠO BẢNG (SCHEMA)
+-- ======================================================================================
 
 -- 1.1. NHÓM PHÂN QUYỀN & NHÂN VIÊN
 -- --------------------------------------------------------------------------------------
@@ -33,7 +36,7 @@ CREATE TABLE employee(
     id_workshift INT NOT NULL,
     id_role INT NOT NULL,
     code VARCHAR(50) UNIQUE NOT NULL,
-    image VARCHAR(MAX), -- Đã có từ trước
+    image VARCHAR(MAX),
     last_name NVARCHAR(100) NOT NULL,
     first_name NVARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
@@ -56,7 +59,7 @@ CREATE TABLE employee(
 CREATE TABLE customer(
     id INT IDENTITY(1,1) PRIMARY KEY,
     code VARCHAR(50) UNIQUE NOT NULL,
-    image VARCHAR(MAX), -- Đã có từ trước
+    image VARCHAR(MAX),
     last_name NVARCHAR(100) NOT NULL,
     first_name NVARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE,
@@ -84,7 +87,7 @@ CREATE TABLE address(
     FOREIGN KEY (id_customer) REFERENCES customer(id)
 );
 
--- 1.3. NHÓM SẢN PHẨM (CORE) - ĐÃ BỔ SUNG IMAGE
+-- 1.3. NHÓM SẢN PHẨM (CORE)
 -- --------------------------------------------------------------------------------------
 CREATE TABLE brand(
     id INT IDENTITY(1,1) PRIMARY KEY,
@@ -138,9 +141,7 @@ CREATE TABLE product(
     id_origin INT NOT NULL,
     code VARCHAR(50) UNIQUE NOT NULL,
     name NVARCHAR(255) NOT NULL,
-    
-    image VARCHAR(MAX), -- [UPDATED] Thêm ảnh đại diện sản phẩm (Thumbnail)
-    
+    image VARCHAR(MAX),
     create_at DATETIME DEFAULT GETDATE(),
     updated_at DATETIME DEFAULT GETDATE(),
     status BIT NOT NULL,              
@@ -157,9 +158,7 @@ CREATE TABLE product_detail(
     id_size INT NOT NULL,
     code VARCHAR(50) UNIQUE NOT NULL,
     name NVARCHAR(255) NOT NULL,
-    
-    image VARCHAR(MAX), -- [UPDATED] Thêm ảnh chi tiết (VD: Ảnh đúng góc cạnh màu sắc đó)
-    
+    image VARCHAR(MAX),
     price DECIMAL(19, 2) NOT NULL,
     quantity INT NOT NULL,
     create_at DATETIME DEFAULT GETDATE(),
@@ -282,22 +281,47 @@ CREATE TABLE order_history(
     FOREIGN KEY (id_employee) REFERENCES employee(id)
 );
 
+-- 1.7. NHÓM GIỎ HÀNG (SHOPPING CART) - [MỚI BỔ SUNG]
+-- --------------------------------------------------------------------------------------
+CREATE TABLE cart(
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    id_customer INT UNIQUE, -- Mỗi khách hàng chỉ có 1 giỏ hàng duy nhất
+    create_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (id_customer) REFERENCES customer(id)
+);
+
+CREATE TABLE cart_detail(
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    id_cart INT NOT NULL,
+    id_product_detail INT NOT NULL,
+    quantity INT NOT NULL,
+    create_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE(),
+    
+    FOREIGN KEY (id_cart) REFERENCES cart(id),
+    FOREIGN KEY (id_product_detail) REFERENCES product_detail(id),
+    
+    -- Constraint: Trong 1 giỏ, 1 sản phẩm chỉ xuất hiện 1 dòng
+    CONSTRAINT UQ_Cart_Product UNIQUE (id_cart, id_product_detail)
+);
+
 
 -- ======================================================================================
--- INSERT DATA 
+-- PHẦN 2: INSERT DATA
 -- ======================================================================================
 
 -- 1. Role & Workshift
 INSERT INTO role (name) VALUES (N'Admin'), (N'Staff'), (N'Warehouse');
 INSERT INTO work_shift (name, start_time, end_time) VALUES (N'Ca Sáng', '08:00:00', '12:00:00'), (N'Ca Chiều', '13:00:00', '17:00:00'), (N'Ca Tối', '18:00:00', '22:00:00');
 
--- 2. Employee (Đã có image)
+-- 2. Employee
 INSERT INTO employee (id_workshift, id_role, code, image, last_name, first_name, email, phone_number, gender, birthday, account, password, salary, create_at, status) VALUES 
 (1, 1, 'NV001', 'https://example.com/emp1.jpg', N'Nguyễn', N'Văn A', 'a@gmail.com', '0901234567', 1, '1995-01-01', 'admin01', '$2a$12$JD...', 15000000, GETDATE(), 1),
 (2, 2, 'NV002', 'https://example.com/emp2.jpg', N'Trần', N'Thị B', 'b@gmail.com', '0901234568', 0, '1998-05-15', 'staff01', '$2a$12$JD...', 8000000, GETDATE(), 1),
 (3, 3, 'NV003', 'https://example.com/emp3.jpg', N'Lê', N'Văn C', 'c@gmail.com', '0901234569', 1, '2000-10-20', 'kho01', '$2a$12$JD...', 9000000, GETDATE(), 1);
 
--- 3. Customer & Address (Đã có image)
+-- 3. Customer & Address
 INSERT INTO customer (code, image, last_name, first_name, email, phone_number, gender, birthday, account, password, create_at, status) VALUES 
 ('KH001', 'https://example.com/cus1.jpg', N'Phạm', N'Hương', 'huong@gmail.com', '0987654321', 0, '1999-02-02', 'khach01', 'pass123', GETDATE(), 1),
 ('KH002', 'https://example.com/cus2.jpg', N'Đỗ', N'Nam', 'nam@gmail.com', '0987654322', 1, '1995-03-03', 'khach02', 'pass123', GETDATE(), 1),
@@ -315,13 +339,12 @@ INSERT INTO origin (code, name, status) VALUES ('O_VN', N'Việt Nam', 1), ('O_U
 INSERT INTO size (code, name, status) VALUES ('S_39', '39', 1), ('S_40', '40', 1), ('S_41', '41', 1);
 INSERT INTO color (code, name, status) VALUES ('CL_RED', N'Đỏ', 1), ('CL_BLK', N'Đen', 1), ('CL_WHT', N'Trắng', 1);
 
--- 5. Product Core (UPDATED: Đã thêm cột image)
+-- 5. Product Core
 INSERT INTO product (id_brand, id_category, id_origin, code, name, image, create_at, status) VALUES 
 (1, 1, 1, 'P001', N'Nike Air Zoom Pegasus', 'https://img.nike.com/pegasus_main.jpg', GETDATE(), 1),
 (2, 3, 2, 'P002', N'Adidas Superstar', 'https://img.adidas.com/superstar_main.jpg', GETDATE(), 1),
 (3, 2, 3, 'P003', N'Puma MB.01', 'https://img.puma.com/mb01_main.jpg', GETDATE(), 1);
 
--- UPDATED: Đã thêm cột image vào product_detail
 INSERT INTO product_detail (id_product, id_color, id_size, code, name, image, price, quantity, create_at, status) VALUES 
 (1, 1, 2, 'SKU_P1_RED_40', N'Nike Air Zoom Đỏ 40', 'https://img.nike.com/pegasus_red.jpg', 2500000, 50, GETDATE(), 1),
 (1, 2, 3, 'SKU_P1_BLK_41', N'Nike Air Zoom Đen 41', 'https://img.nike.com/pegasus_black.jpg', 2500000, 30, GETDATE(), 1),
@@ -362,3 +385,11 @@ INSERT INTO order_history (id_order, id_employee, action, column_name, before_va
 (1, 1, N'Xác nhận đơn hàng', N'status', N'Chờ xác nhận', N'Đã xác nhận', GETDATE()),
 (2, NULL, N'Khách tạo đơn mới', N'status', NULL, N'Chờ xác nhận', DATEADD(hour, -2, GETDATE())),
 (3, 2, N'Hoàn thành đơn tại quầy', N'status', N'Mới', N'Hoàn thành', DATEADD(day, -1, GETDATE()));
+
+-- 10. Dữ liệu mẫu Cart (Đã thêm)
+-- Giả lập: Khách hàng Phạm Hương (ID=1) đang có 2 sản phẩm trong giỏ nhưng chưa mua
+INSERT INTO cart (id_customer) VALUES (1);
+-- Thêm sản phẩm Nike đen (ID_PD=2) và Adidas (ID_PD=3) vào giỏ
+INSERT INTO cart_detail (id_cart, id_product_detail, quantity) VALUES 
+(1, 2, 1), 
+(1, 3, 2);
