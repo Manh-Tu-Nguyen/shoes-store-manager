@@ -404,3 +404,148 @@ CREATE TABLE product_review(
     FOREIGN KEY (id_product) REFERENCES product(id),
     FOREIGN KEY (id_order) REFERENCES orders(id)
 );
+
+USE SHOES_STORE_DB;
+GO
+
+-- ======================================================================================
+-- PHẦN 2: INSERT DATA (DATA SEEDING)
+-- ======================================================================================
+
+-- 1. NHÓM DANH MỤC (LOOKUP TABLES) - CHẠY TRƯỚC
+-- --------------------------------------------------------------------------------------
+
+-- 1.1 Role & Workshift
+INSERT INTO role (name) VALUES 
+(N'Admin'), 
+(N'Staff'), 
+(N'Warehouse');
+
+INSERT INTO work_shift (name, start_time, end_time) VALUES 
+(N'Ca Sáng', '08:00:00', '12:00:00'), 
+(N'Ca Chiều', '13:00:00', '17:00:00'), 
+(N'Ca Tối', '18:00:00', '22:00:00');
+
+-- 1.2 Attributes (Brand, Category, Origin, Size, Color)
+INSERT INTO brand (code, name, status) VALUES 
+('B_NIKE', 'Nike', 1), 
+('B_ADIDAS', 'Adidas', 1), 
+('B_PUMA', 'Puma', 1);
+
+INSERT INTO category (code, name, status) VALUES 
+('C_RUN', N'Giày Chạy Bộ', 1), 
+('C_BASKET', N'Giày Bóng Rổ', 1), 
+('C_CASUAL', N'Giày Thời Trang', 1);
+
+INSERT INTO origin (code, name, status) VALUES 
+('O_VN', N'Việt Nam', 1), 
+('O_USA', N'Mỹ', 1), 
+('O_CN', N'Trung Quốc', 1);
+
+INSERT INTO size (code, name, status) VALUES 
+('S_39', '39', 1), 
+('S_40', '40', 1), 
+('S_41', '41', 1);
+
+INSERT INTO color (code, name, status) VALUES 
+('CL_RED', N'Đỏ', 1), 
+('CL_BLK', N'Đen', 1), 
+('CL_WHT', N'Trắng', 1);
+
+-- 1.3 Voucher & Promotion
+INSERT INTO voucher (code, name, min_order_value, max_discount_value, start_date, end_date, value, type, quantity, status) VALUES 
+('SALE10', N'Giảm 10%', 500000, 50000, '2026-01-01', '2026-12-31', 10, 1, 100, 1),
+('TET2026', N'Lì xì 50k', 1000000, 50000, '2026-01-01', '2026-02-15', 50000, 0, 50, 1),
+('FREESHIP', N'Mã vận chuyển', 200000, 30000, '2026-01-01', '2026-06-01', 30000, 0, 200, 1);
+
+INSERT INTO promotion (code, name, value, start_date, end_date, status) VALUES 
+('BLACKFRI', N'Black Friday', 20, '2026-11-20', '2026-11-30', 0),
+('SUMMER', N'Xả hè', 15, '2026-06-01', '2026-06-30', 0),
+('FLASH', N'Flash Sale', 5, '2026-01-15', '2026-01-20', 1);
+
+
+-- 2. NHÓM NGƯỜI DÙNG (USER & CUSTOMER)
+-- --------------------------------------------------------------------------------------
+
+-- 2.1 Employee
+-- Password là hash của '123456' (Ví dụ mẫu BCrypt)
+INSERT INTO employee (id_workshift, id_role, code, image, last_name, first_name, email, phone_number, gender, birthday, account, password, salary, create_at, status) VALUES 
+(1, 1, 'NV001', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', N'Nguyễn', N'Văn A', 'admin@gmail.com', '0901111111', 1, '1995-01-01', 'admin', '$2a$12$JD2...', 15000000, GETDATE(), 1),
+(2, 2, 'NV002', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka', N'Trần', N'Thị B', 'staff@gmail.com', '0902222222', 0, '1998-05-15', 'staff', '$2a$12$JD2...', 8000000, GETDATE(), 1),
+(3, 3, 'NV003', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob', N'Lê', N'Văn C', 'kho@gmail.com', '0903333333', 1, '2000-10-20', 'kho', '$2a$12$JD2...', 9000000, GETDATE(), 1);
+
+-- 2.2 Customer
+INSERT INTO customer (code, image, last_name, first_name, email, phone_number, gender, birthday, account, password, create_at, status) VALUES 
+('KH001', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Cus1', N'Phạm', N'Hương', 'khach1@gmail.com', '0987654321', 0, '1999-02-02', 'khach1', '$2a$12$JD2...', GETDATE(), 1),
+('KH002', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Cus2', N'Đỗ', N'Nam', 'khach2@gmail.com', '0987654322', 1, '1995-03-03', 'khach2', '$2a$12$JD2...', GETDATE(), 1),
+('KH003', NULL, N'Lê', N'Lợi', 'khach3@gmail.com', '0987654323', 1, '2002-04-04', 'khach3', '$2a$12$JD2...', GETDATE(), 1);
+
+-- 2.3 Address
+INSERT INTO address (id_customer, consignee_name, consignee_phone, city, ward, street_detail, note) VALUES 
+(1, N'Phạm Hương', '0987654321', N'Hà Nội', N'Dịch Vọng', N'Số 1 Cầu Giấy', N'Giao giờ hành chính'),
+(2, N'Đỗ Nam', '0987654322', N'TP.HCM', N'Bến Nghé', N'Quận 1', N'Nhà riêng'),
+(3, N'Lê Lợi', '0987654323', N'Đà Nẵng', N'Hải Châu', N'Số 10 Bạch Đằng', N'Gọi trước khi giao');
+
+
+-- 3. NHÓM SẢN PHẨM (CORE DATA)
+-- --------------------------------------------------------------------------------------
+
+-- 3.1 Product (Parent)
+INSERT INTO product (id_brand, id_category, id_origin, code, name, image, create_at, status) VALUES 
+(1, 1, 1, 'P001', N'Nike Air Zoom Pegasus', 'https://static.nike.com/a/images/t_PDP_1280_v1/f_auto,q_auto:eco/pegasus.jpg', GETDATE(), 1),
+(2, 3, 2, 'P002', N'Adidas Superstar', 'https://assets.adidas.com/images/w_600,f_auto,q_auto/superstar.jpg', GETDATE(), 1),
+(3, 2, 3, 'P003', N'Puma MB.01', 'https://images.puma.com/image/upload/f_auto,q_auto,b_rgb:fafafa,w_2000,h_2000/global/mb01.jpg', GETDATE(), 1);
+
+-- 3.2 Product Detail (SKU)
+INSERT INTO product_detail (id_product, id_color, id_size, code, name, image, price, quantity, create_at, status) VALUES 
+(1, 1, 1, 'SKU_P1_RED_39', N'Nike Air Zoom Đỏ 39', 'https://img.nike/red.jpg', 2500000, 50, GETDATE(), 1),
+(1, 2, 2, 'SKU_P1_BLK_40', N'Nike Air Zoom Đen 40', 'https://img.nike/black.jpg', 2500000, 30, GETDATE(), 1),
+(2, 3, 3, 'SKU_P2_WHT_41', N'Adidas Superstar Trắng 41', 'https://img.adidas/white.jpg', 1800000, 100, GETDATE(), 1);
+
+-- 3.3 Product Promotion (Link SP với Khuyến mãi)
+INSERT INTO product_promotion (id_product, id_promotion) VALUES 
+(1, 3), -- Nike tham gia Flash Sale
+(2, 3), -- Adidas tham gia Flash Sale
+(3, 1); -- Puma tham gia Black Friday
+
+
+-- 4. NHÓM GIAO DỊCH (TRANSACTIONS)
+-- --------------------------------------------------------------------------------------
+
+-- 4.1 Cart & Cart Detail
+INSERT INTO cart (id_customer) VALUES (1), (2), (3);
+
+INSERT INTO cart_detail (id_cart, id_product_detail, quantity) VALUES 
+(1, 1, 1), -- Khách 1 giỏ có Nike Đỏ
+(1, 2, 2), -- Khách 1 giỏ có thêm 2 đôi Nike Đen
+(2, 3, 1); -- Khách 2 giỏ có Adidas Trắng
+
+-- 4.2 Orders
+INSERT INTO orders (id_customer, id_employee, id_voucher, code, employee_code, employee_name, customer_name, customer_phone, consignee_name, consignee_phone, consignee_address, total_money, total_quantity, voucher_discount_value, shipping_fee, final_amount, create_at, note, status) VALUES 
+(1, 1, 1, 'ORD_001', 'NV001', N'Nguyễn Văn A', N'Phạm Hương', '0987654321', N'Phạm Hương', '0987654321', N'Số 1 Cầu Giấy HN', 2500000, 1, 50000, 30000, 2480000, GETDATE(), N'Giao nhanh', 3), -- Hoàn thành
+(2, NULL, NULL, 'ORD_002', NULL, NULL, N'Đỗ Nam', '0987654322', N'Đỗ Nam', '0987654322', N'Quận 1 HCM', 5000000, 2, 0, 0, 5000000, DATEADD(hour, -2, GETDATE()), N'', 0), -- Chờ xác nhận
+(NULL, 2, NULL, 'ORD_003', 'NV002', N'Trần Thị B', N'Khách lẻ', N'', N'Khách lẻ', N'', N'Tại quầy', 1800000, 1, 0, 0, 1800000, DATEADD(day, -1, GETDATE()), N'Khách mua tại quầy', 3); -- Hoàn thành
+
+-- 4.3 Order Detail
+INSERT INTO order_detail (id_order, id_product_detail, price, quantity, total_price) VALUES 
+(1, 1, 2500000, 1, 2500000), -- Đơn 1 mua 1 Nike Đỏ
+(2, 2, 2500000, 2, 5000000), -- Đơn 2 mua 2 Nike Đen
+(3, 3, 1800000, 1, 1800000); -- Đơn 3 mua 1 Adidas Trắng
+
+-- 4.4 Payment
+INSERT INTO payment (id_order, amount, payment_method, status, transaction_code, payment_date, note) VALUES 
+(1, 2480000, 0, 1, NULL, GETDATE(), N'Tiền mặt khi nhận hàng'),
+(2, 5000000, 1, 1, 'VNP12345678', GETDATE(), N'VNPAY - Đã thanh toán'),
+(3, 1800000, 0, 1, NULL, GETDATE(), N'Thanh toán tại quầy');
+
+-- 4.5 Order History (Log)
+INSERT INTO order_history (id_order, id_employee, action, column_name, before_val, after_val, create_at) VALUES 
+(1, 1, N'Xác nhận đơn hàng', N'status', N'0', N'1', GETDATE()),
+(2, NULL, N'Đặt hàng mới', N'status', NULL, N'0', DATEADD(hour, -2, GETDATE())),
+(3, 2, N'Hoàn thành', N'status', N'1', N'3', DATEADD(day, -1, GETDATE()));
+
+-- 4.6 Product Review
+INSERT INTO product_review (id_customer, id_product, id_order, rating, comment, image, create_at, status) VALUES 
+(1, 1, 1, 5, N'Giày đi rất êm, giao hàng nhanh!', NULL, GETDATE(), 1),
+(1, 1, 1, 4, N'Màu đỏ bên ngoài hơi tối hơn ảnh chút.', NULL, GETDATE(), 1),
+(2, 2, 2, 5, N'Hàng chính hãng, check code ok.', NULL, GETDATE(), 1);
