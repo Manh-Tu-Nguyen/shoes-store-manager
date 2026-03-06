@@ -6,6 +6,7 @@ import com.example.backend.repository.auth.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -15,29 +16,46 @@ public class EmployeeService {
     private EmployeeRepository repo;
 
     public Employee create(EmployeeDTO dto) {
-        if (repo.findByCode(dto.getCode()).isPresent()) {
-            throw new RuntimeException("Mã nhân viên đã tồn tại");
-        }
+
         Employee e = new Employee();
+
         e.setCode(dto.getCode());
-        e.setFullName(dto.getFullName());
-        e.setPhone(dto.getPhone());
+        e.setFirstName(dto.getFirstName());
+        e.setLastName(dto.getLastName());
+        e.setPhoneNumber(dto.getPhoneNumber());
         e.setEmail(dto.getEmail());
+
+        e.setIdWorkshift(dto.getIdWorkshift() != null ? dto.getIdWorkshift() : 1);
+        e.setIdRole(dto.getIdRole() != null ? dto.getIdRole() : 1);
+
+        e.setGender(dto.getGender() != null ? dto.getGender() : true);
+
+        e.setBirthday(dto.getBirthday() != null ? dto.getBirthday() : LocalDate.of(2000,1,1));
+
+        e.setAccount(dto.getAccount());
+        e.setPassword(dto.getPassword());
+
+        e.setSalary(dto.getSalary());
+
+        e.setStatus(dto.getStatus() != null ? dto.getStatus() : true);
+
         return repo.save(e);
     }
-
     public Employee update(Integer id, EmployeeDTO dto) {
-        Employee e = getById(id);
-        e.setFullName(dto.getFullName());
-        e.setPhone(dto.getPhone());
+        Employee e = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên"));
+        ;
+        e.setFirstName(dto.getFirstName());
+        e.setLastName(dto.getLastName());
+        e.setPhoneNumber(dto.getPhoneNumber());
         e.setEmail(dto.getEmail());
+        e.setGender(dto.getGender());
+        e.setSalary(dto.getSalary());
         return repo.save(e);
     }
 
     public void delete(Integer id) {
-        Employee e = getById(id);
-        e.setStatus(false);
-        repo.save(e);
+        repo.deleteById(id);
     }
 
     public Employee getById(Integer id) {
@@ -48,8 +66,16 @@ public class EmployeeService {
     public List<Employee> getAll() {
         return repo.findAll();
     }
-
     public List<Employee> search(String keyword) {
-        return repo.search(keyword);
+        return repo.findAll()
+                .stream()
+                .filter(e ->
+                        e.getFirstName().toLowerCase().contains(keyword.toLowerCase()) ||
+                                e.getLastName().toLowerCase().contains(keyword.toLowerCase()) ||
+                                e.getEmail().toLowerCase().contains(keyword.toLowerCase())||
+                        e.getPhoneNumber().contains(keyword) ||
+                                e.getCode().toLowerCase().contains(keyword.toLowerCase())
+                )
+                .toList();
     }
 }

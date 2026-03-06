@@ -7,39 +7,37 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/work-shifts")
+@RequestMapping("/api/shifts")
 @CrossOrigin("*")
 public class WorkShiftRestcontroller {
 
     @Autowired
-    private WorkShiftService workShiftService;
+    private WorkShiftService service;
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody WorkShift workShift) {
-        return ResponseEntity.ok(workShiftService.create(workShift));
+    public ResponseEntity<?> create(@RequestBody WorkShift w){
+        return ResponseEntity.ok(service.create(w));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(
-            @PathVariable Integer id,
-            @RequestBody WorkShift workShift
-    ) {
-        return ResponseEntity.ok(workShiftService.update(id, workShift));
+    public ResponseEntity<?> update(@PathVariable Integer id,
+                                    @RequestBody WorkShift w){
+        return ResponseEntity.ok(service.update(id,w));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Integer id) {
-        workShiftService.delete(id);
+    public ResponseEntity<?> delete(@PathVariable Integer id){
+        service.delete(id);
         return ResponseEntity.ok("Xóa ca làm việc thành công");
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable Integer id) {
-        return ResponseEntity.ok(workShiftService.getById(id));
+    public ResponseEntity<?> getById(@PathVariable Integer id){
+        return ResponseEntity.ok(service.getById(id));
     }
 
     @GetMapping
-    public ResponseEntity<?> getAll() {
-        return ResponseEntity.ok(workShiftService.getAll());
+    public ResponseEntity<?> getAll(){
+        return ResponseEntity.ok(service.getAll());
     }
 }

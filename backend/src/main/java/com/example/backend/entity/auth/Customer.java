@@ -4,8 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Entity
 @Table(name = "customer")
@@ -13,40 +12,46 @@ import java.time.LocalDateTime;
 @Setter
 public class Customer {
 
-
-
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Integer id;
 
-        @Column(unique = true, nullable = false)
+        @Column(name = "code")
         private String code;
 
+        @Column(name = "image")
         private String image;
 
-        @Column(nullable = false)
+        @Column(name = "last_name")
         private String lastName;
 
-        @Column(nullable = false)
+        @Column(name = "first_name")
         private String firstName;
 
-        @Column(unique = true)
+        @Column(name = "email")
         private String email;
 
+        @Column(name = "phone_number")
         private String phoneNumber;
 
+        @Column(name = "gender")
         private Boolean gender;
-        private LocalDate birthday;
 
-        @Column(unique = true)
+        @Column(name = "birthday")
+        private Date birthday;
+
+        @Column(name = "account")
         private String account;
 
+        @Column(name = "password")
         private String password;
 
+        @Column(name = "create_at")
+        private Date createAt;
+
+        @Column(name = "updated_at")
+        private Date updatedAt;
+
+        @Column(name = "status")
         private Boolean status;
-
-        private LocalDateTime createAt;
-        private LocalDateTime updatedAt;
-
-
 }

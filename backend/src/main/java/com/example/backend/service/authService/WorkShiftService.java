@@ -13,29 +13,32 @@ public class WorkShiftService {
     @Autowired
     private WorkShiftRepository repo;
 
-    public WorkShift create(WorkShift ws) {
-        return repo.save(ws);
-    }
-
-    public WorkShift update(Integer id, WorkShift ws) {
-        WorkShift w = getById(id);
-        w.setName(ws.getName());
-        w.setStartTime(ws.getStartTime());
-        w.setEndTime(ws.getEndTime());
+    public WorkShift create(WorkShift w){
         return repo.save(w);
     }
 
-    public void delete(Integer id) {
+    public WorkShift update(Integer id, WorkShift w){
+
+        WorkShift shift = repo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy ca làm việc"));
+
+        shift.setName(w.getName());
+        shift.setStartTime(w.getStartTime());
+        shift.setEndTime(w.getEndTime());
+
+        return repo.save(shift);
+    }
+
+    public void delete(Integer id){
         repo.deleteById(id);
     }
 
-    public WorkShift getById(Integer id) {
+    public WorkShift getById(Integer id){
         return repo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy ca làm"));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy ca làm việc"));
     }
 
-    public List<WorkShift> getAll() {
+    public List<WorkShift> getAll(){
         return repo.findAll();
     }
 }
-
