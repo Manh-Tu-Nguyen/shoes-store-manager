@@ -12,18 +12,16 @@ import java.time.LocalDateTime;
 @Setter
 @MappedSuperclass
 public abstract class BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "create_at", updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @Column(name = "update_at")
+    @Column(name = "updated_at")
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-    @Version
-    private Integer version;
 }
