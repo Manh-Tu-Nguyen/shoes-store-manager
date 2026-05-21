@@ -1,11 +1,11 @@
 import axiosInstance from './axios';
 
 const originApi = {
-    getAll: () => axiosInstance.get('/Origins'),
-    getById: (id) => axiosInstance.get(`/Origins/${id}`),
-    create: (data) => axiosInstance.post('/Origins', data),
-    update: (id, data) => axiosInstance.put(`/Origins/${id}`, data),
-    delete: (id) => axiosInstance.delete(`/Origins/${id}`)
+    getAll: () => axiosInstance.get('/origins'),
+  getById: (id) => axiosInstance.get(`/origins/${id}`),
+  create: (payload) => axiosInstance.post('/origins', payload),
+  update: (id, payload) => axiosInstance.put(`/origins/${id}`, payload),
+  delete: (id) => axiosInstance.delete(`/origins/${id}`),
 };
 
 export default originApi;

@@ -1,20 +1,20 @@
 package com.example.backend.dto.product;
 
+import com.example.backend.dto.baseDTO.BaseDTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-@Getter
-@Setter
-public class SizeDTO {
-
-    private Integer id;
-
-    // Code có thể null khi Create (vì Backend có thể tự sinh mã hóa đơn/SP), nhưng nếu bắt buộc nhập từ Front-end thì thêm @NotBlank
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class SizeDTO extends BaseDTO {
+    @Size(max = 50)
     private String code;
 
-    @NotBlank(message = "Tên không được để trống")
+    @NotBlank(message = "Tên kích cỡ không được để trống")
+    @Size(max = 100)
     private String name;
 
     @NotNull(message = "Trạng thái không được để trống")

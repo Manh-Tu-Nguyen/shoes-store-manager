@@ -1,28 +1,34 @@
 package com.example.backend.dto.auth;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import com.example.backend.dto.baseDTO.BaseDTO;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
-public class EmployeeDTO {
-    private Integer id;
+@EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL) // Ẩn các trường null khi trả về JSON
+public class EmployeeDTO extends BaseDTO {
 
+    // Phục vụ cho việc nhận dữ liệu từ Frontend (Tạo/Cập nhật)
     @NotNull(message = "ID Ca làm việc không được để trống")
-    private Integer idWorkshift;
+    private Integer workShiftId;
 
     @NotNull(message = "ID Quyền không được để trống")
-    private Integer idRole;
+    private Integer roleId;
 
-    // Mã nhân viên (Trả về khi Get, có thể ẩn ở form Create tùy logic)
+    // Phục vụ cho việc trả dữ liệu chi tiết về Frontend (Tùy chọn map từ Service)
+    private WorkShiftDTO workShift;
+    private RoleDTO role;
+
+    @NotBlank(message = "Mã nhân viên không được để trống")
     private String code;
 
-    // Link ảnh đại diện
     private String image;
 
     @NotBlank(message = "Họ không được để trống")
@@ -36,20 +42,26 @@ public class EmployeeDTO {
     private String email;
 
     @NotBlank(message = "Số điện thoại không được để trống")
+    @Pattern(regexp = "(84|0[3|5|7|8|9])+([0-9]{8})\\b", message = "Số điện thoại không hợp lệ")
     private String phoneNumber;
 
     @NotNull(message = "Giới tính không được để trống")
     private Boolean gender;
 
     @NotNull(message = "Ngày sinh không được để trống")
+    @Past(message = "Ngày sinh phải ở trong quá khứ")
     private LocalDate birthday;
 
-    // Chú ý: Cẩn thận khi trả về Password trong GET API
+    @NotBlank(message = "Tài khoản không được để trống")
     private String account;
+
+    // QUAN TRỌNG: Chỉ cho phép ghi (nhận từ Client), không bao giờ trả về Client
+    @NotBlank(message = "Mật khẩu không được để trống")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @NotNull(message = "Lương không được để trống")
-    @Min(value = 0, message = "Lương không được nhỏ hơn 0")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Lương phải lớn hơn 0")
     private BigDecimal salary;
 
     @NotNull(message = "Trạng thái không được để trống")

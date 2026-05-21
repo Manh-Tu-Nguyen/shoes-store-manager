@@ -1,39 +1,34 @@
 package com.example.backend.dto.order;
 
+import com.example.backend.dto.baseDTO.BaseDTO;
+import com.example.backend.dto.product.ProductDetailDTO;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class OrderDetailDTO {
+@Data
+@EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class OrderDetailDTO extends BaseDTO {
 
-    private Integer id;
+    private Integer orderId;
 
-    private Integer idOrder; // ID của hóa đơn cha
+    private Integer productDetailId;
 
-    @NotNull(message = "Sản phẩm không được để trống")
-    private Integer idProductDetail; // ID của SKU cụ thể
+    // Khi trả chi tiết đơn hàng, ta không cần map lại OrderDTO để tránh vòng lặp
+    // Chỉ cần map ProductDetailDTO để Vue.js hiển thị tên giày, màu, size, ảnh
+    private ProductDetailDTO productDetail;
 
-    // --- SNAPSHOT DATA: Hiển thị giao diện nhanh mà không cần Join nhiều bảng ---
-    private String productName;
-    private String colorName;
-    private String sizeName;
-    private String productImage;
-
-    @NotNull(message = "Giá bán không được để trống")
-    @Min(value = 0, message = "Giá bán không được nhỏ hơn 0")
-    private BigDecimal price; // Giá tại thời điểm chốt đơn
+    @NotNull(message = "Giá tại thời điểm mua không được để trống")
+    private BigDecimal price;
 
     @NotNull(message = "Số lượng không được để trống")
     @Min(value = 1, message = "Số lượng phải lớn hơn 0")
     private Integer quantity;
 
-    // Thành tiền cho item này: Price * Quantity
     private BigDecimal totalPrice;
 }

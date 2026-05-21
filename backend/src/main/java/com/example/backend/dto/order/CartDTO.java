@@ -1,13 +1,19 @@
 package com.example.backend.dto.order;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.example.backend.dto.auth.CustomerDTO;
+import com.example.backend.dto.baseDTO.BaseDTO;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-@Getter
-@Setter
-public class CartDTO {
+@Data
+@EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class CartDTO extends BaseDTO {
 
-    private Integer id;
+    @NotNull(message = "ID Khách hàng không được để trống")
+    private Integer customerId;
 
-    private Integer idCustomer;
+    private CustomerDTO customer;
 }

@@ -1,24 +1,27 @@
 package com.example.backend.dto.order;
 
-import jakarta.validation.constraints.Min;
+import com.example.backend.dto.baseDTO.BaseDTO;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
-public class PaymentDTO {
-
-    private Integer id;
+@Data
+@EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class PaymentDTO extends BaseDTO {
 
     @NotNull(message = "ID Đơn hàng không được để trống")
-    private Integer idOrder;
+    private Integer orderId;
 
-    @NotNull(message = "Số tiền giao dịch không được để trống")
-    @Min(value = 0, message = "Số tiền không được nhỏ hơn 0")
+    // Thường không cần trả OrderDTO nguyên cục ở đây, chỉ cần ID là đủ thao tác
+
+    @NotNull(message = "Số tiền thanh toán không được để trống")
     private BigDecimal amount;
 
     @NotNull(message = "Phương thức thanh toán không được để trống")
@@ -27,11 +30,15 @@ public class PaymentDTO {
     @NotNull(message = "Trạng thái thanh toán không được để trống")
     private Integer status;
 
-    // Mã giao dịch từ bên thứ 3 (VNPAY, Momo, Bank) trả về
+    @Size(max = 100)
     private String transactionCode;
 
-    // Thời điểm thanh toán thành công
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime paymentDate;
 
     private String note;
+
+    private BigDecimal amountTendered;
+
+    private BigDecimal changeAmount;
 }

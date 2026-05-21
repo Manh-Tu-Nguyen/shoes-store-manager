@@ -1,10 +1,15 @@
 import axiosInstance from './axios';
 
 const productDetailApi = {
-    getByProductId: (productId) => axiosInstance.get(`/product-details/product/${productId}`),
-    create: (data) => axiosInstance.post('/product-details', data),
-    update: (id, data) => axiosInstance.put(`/product-details/${id}`, data),
-    delete: (id) => axiosInstance.delete(`/product-details/${id}`)
+  // === API BẢO MẬT (Dành cho Admin) ===
+  getDetailById: (id) => axiosInstance.get(`/product-details/${id}`),
+  getDetailsByAdmin: (productId) => axiosInstance.get(`/product-details/product/${productId}`),
+  createDetail: (payload) => axiosInstance.post('/product-details', payload),
+  updateDetail: (id, payload) => axiosInstance.put(`/product-details/${id}`, payload),
+  deleteDetail: (id) => axiosInstance.delete(`/product-details/${id}`),
+
+  // === API CÔNG KHAI (Dành cho Client trang chủ) ===
+  getPublicDetailsByProductId: (productId) => axiosInstance.get(`/public/product-details/product/${productId}`)
 };
 
 export default productDetailApi;

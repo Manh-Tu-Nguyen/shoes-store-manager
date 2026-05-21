@@ -2,33 +2,41 @@ package com.example.backend.entity.order;
 
 import com.example.backend.entity.baseEntity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
 @Entity
 @Table(name = "payment")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Payment extends BaseEntity {
 
+    @NotNull(message = "Đơn hàng không được để trống")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_order", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Order order;
 
+    @NotNull(message = "Số tiền thanh toán không được để trống")
     @Column(name = "amount", nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
-    // 0: Tiền mặt (Cash / COD), 1: Chuyển khoản (Banking / VNPAY)
+    @NotNull(message = "Phương thức thanh toán không được để trống")
     @Column(name = "payment_method", nullable = false)
-    private Integer paymentMethod;
+    private Integer paymentMethod; // 0: Tiền mặt, 1: Chuyển khoản
 
-    // 0: Chưa thanh toán, 1: Đã thanh toán, 2: Hoàn tiền
+    @NotNull(message = "Trạng thái thanh toán không được để trống")
     @Column(name = "status", nullable = false)
-    private Integer status;
+    private Integer status; // 0: Chưa TT, 1: Đã TT, 2: Hoàn tiền
 
+    @Size(max = 100)
     @Column(name = "transaction_code", length = 100)
     private String transactionCode;
 
@@ -37,4 +45,10 @@ public class Payment extends BaseEntity {
 
     @Column(name = "note", columnDefinition = "NVARCHAR(MAX)")
     private String note;
+
+    @Column(name = "amount_tendered", precision = 19, scale = 2)
+    private BigDecimal amountTendered;
+
+    @Column(name = "change_amount", precision = 19, scale = 2)
+    private BigDecimal changeAmount;
 }

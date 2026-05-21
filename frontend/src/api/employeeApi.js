@@ -1,11 +1,13 @@
 import axiosInstance from './axios';
 
 const employeeApi = {
-  getAll: () => axiosInstance.get('/employees'),
-  getById: (id) => axiosInstance.get(`/employees/${id}`),
-  create: (data) => axiosInstance.post('/employees', data),
-  update: (id, data) => axiosInstance.put(`/employees/${id}`, data),
-  delete: (id) => axiosInstance.delete(`/employees/${id}`),
+  getAll: () => axiosInstance.get('/admin/employees'),
+  getById: (id) => axiosInstance.get(`/admin/employees/${id}`),
+  create: (payload) => axiosInstance.post('/admin/employees', payload),
+  update: (id, payload) => axiosInstance.put(`/admin/employees/${id}`, payload),
+  delete: (id) => axiosInstance.delete(`/admin/employees/${id}`),
+  getRoles: () => axiosInstance.get('/admin/roles'),
+  getWorkShifts: () => axiosInstance.get('/api/work-shifts'),
 };
 
 export default employeeApi;

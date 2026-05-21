@@ -1,9 +1,17 @@
 package com.example.backend.repository.auth;
 
 import com.example.backend.entity.auth.WorkShift;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.repository.Repository;
 
-@Repository
-public interface WorkShiftRepository extends JpaRepository<WorkShift, Integer> {
+import java.util.List;
+import java.util.Optional;
+
+@org.springframework.stereotype.Repository
+public interface WorkShiftRepository extends Repository<WorkShift, Integer> {
+    WorkShift save(WorkShift workShift);
+    void deleteById(Integer id);
+    boolean existsById(Integer id);
+    List<WorkShift> findAll();
+
+    Optional<WorkShift> findById(Integer id);
 }

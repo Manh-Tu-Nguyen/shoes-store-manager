@@ -1,20 +1,18 @@
 package com.example.backend.dto.auth;
 
+import com.example.backend.dto.baseDTO.BaseDTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
 
 import java.time.LocalTime;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class WorkShiftDTO {
-    private Integer id;
+@EqualsAndHashCode(callSuper = true)
+public class WorkShiftDTO extends BaseDTO {
 
-    @NotBlank(message = "Tên ca không được để trống")
+    @NotBlank(message = "Tên ca làm việc không được để trống")
     private String name;
 
     @NotNull(message = "Giờ bắt đầu không được để trống")

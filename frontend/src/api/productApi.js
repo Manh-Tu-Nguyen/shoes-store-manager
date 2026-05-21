@@ -1,13 +1,13 @@
 import axiosInstance from './axios';
 
 const productApi = {
-    getAll: () => axiosInstance.get('/products'),
-    create: (data) => axiosInstance.post('/products', data),
-    
-    // BỔ SUNG HÀM UPDATE
-    update: (id, data) => axiosInstance.put(`/products/${id}`, data),
-    
-    delete: (id) => axiosInstance.delete(`/products/${id}`)
+  getAllProducts: () => axiosInstance.get('/products'), 
+  // API dành cho Khách hàng (Không cần Token)
+  getPublicProducts: () => axiosInstance.get('/public/products'),
+  getProductById: (id) => axiosInstance.get(`/products/${id}`),
+  createProduct: (payload) => axiosInstance.post('/products', payload),
+  updateProduct: (id, payload) => axiosInstance.put(`/products/${id}`, payload),
+  deleteProduct: (id) => axiosInstance.delete(`/products/${id}`),
 };
 
 export default productApi;

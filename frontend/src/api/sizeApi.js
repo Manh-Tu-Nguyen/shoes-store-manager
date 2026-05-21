@@ -1,11 +1,11 @@
 import axiosInstance from './axios';
 
 const sizeApi = {
-    getAll: () => axiosInstance.get('/Sizes'),
-    getById: (id) => axiosInstance.get(`/Sizes/${id}`),
-    create: (data) => axiosInstance.post('/Sizes', data),
-    update: (id, data) => axiosInstance.put(`/Sizes/${id}`, data),
-    delete: (id) => axiosInstance.delete(`/Sizes/${id}`)
+    getAll: () => axiosInstance.get('/sizes'),
+  getById: (id) => axiosInstance.get(`/sizes/${id}`),
+  create: (payload) => axiosInstance.post('/sizes', payload),
+  update: (id, payload) => axiosInstance.put(`/sizes/${id}`, payload),
+  delete: (id) => axiosInstance.delete(`/sizes/${id}`),
 };
 
 export default sizeApi;

@@ -15,6 +15,7 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    // 1. Xử lý lỗi nghiệp vụ chung (Đã gộp gọn gàng, xóa hàm thừa ở cuối)
     @ExceptionHandler(AppException.class)
     public ResponseEntity<Map<String, Object>> handleAppException(AppException e) {
         return ResponseEntity
@@ -25,6 +26,7 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    // 2. Xử lý lỗi Validate dữ liệu đầu vào (@Valid)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException e) {
         Map<String, String> errors = new HashMap<>();
@@ -42,6 +44,7 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    // 3. Xử lý lỗi File tải lên quá lớn
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, Object>> handleMaxSizeException(MaxUploadSizeExceededException exc) {
         return ResponseEntity
@@ -52,19 +55,7 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleUnwantedException(Exception e) {
-        e.printStackTrace();
-
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of(
-                        "success", false,
-                        "message", "Lỗi hệ thống vui lòng thử lại sau. (" + e.getMessage() + ")"
-                ));
-
-    }
-
+    // 4. Xử lý lỗi trùng lặp dữ liệu trong SQL
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<?> handleDataIntegrityViolation(DataIntegrityViolationException e) {
         String message = "Dữ liệu đã tồn tại hoặc vi phạm ràng buộc dữ liệu!";
@@ -79,5 +70,18 @@ public class GlobalExceptionHandler {
                 "success", false,
                 "message", message
         ));
+    }
+
+    // 5. Trạm chốt chặn cuối cùng (Bắt mọi lỗi Runtime chưa lường trước)
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleUnwantedException(Exception e) {
+        e.printStackTrace();
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                        "success", false,
+                        "message", "Lỗi hệ thống vui lòng thử lại sau. (" + e.getMessage() + ")"
+                ));
     }
 }

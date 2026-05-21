@@ -1,11 +1,9 @@
 import axiosInstance from './axios';
 
 const addressApi = {
-  // Lấy danh sách địa chỉ theo ID khách hàng
   getByCustomerId: (customerId) => axiosInstance.get(`/addresses/customer/${customerId}`),
-  getById: (id) => axiosInstance.get(`/addresses/${id}`),
-  create: (data) => axiosInstance.post('/addresses', data),
-  update: (id, data) => axiosInstance.put(`/addresses/${id}`, data),
+  create: (payload) => axiosInstance.post('/addresses', payload),
+  update: (id, payload) => axiosInstance.put(`/addresses/${id}`, payload),
   delete: (id) => axiosInstance.delete(`/addresses/${id}`),
 };
 

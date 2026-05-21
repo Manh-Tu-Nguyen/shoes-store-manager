@@ -1,183 +1,121 @@
 import { defineStore } from 'pinia';
 import productApi from '@/api/productApi';
 import productDetailApi from '@/api/productDetailApi';
-import brandApi from '@/api/brandApi';
-import categoryApi from '@/api/categoryApi';
-import colorApi from '@/api/colorApi';
-import sizeApi from '@/api/sizeApi';
-import originApi from '@/api/originApi';
+import axiosInstance from '@/api/axios';
 
 export const useProductStore = defineStore('product', {
   state: () => ({
+    // STATE CỦA SẢN PHẨM CHA
     products: [],
+    
+    // STATE CỦA BIẾN THỂ (SKU) - BẮT BUỘC PHẢI CÓ ĐỂ KHÔNG BỊ SẬP TRANG
     productDetails: [], 
-    brands: [],
-    categories: [],
-    colors: [],
-    sizes: [],
+    
+    // DỮ LIỆU CÁC DROP-DOWN TÙY CHỌN
+    brands: [], 
+    categories: [], 
     origins: [],
-    isLoading: false,
-    error: null
+    colors: [], 
+    sizes: [],
+    
+    loading: false
   }),
-
+  getters: {
+    activeProducts: (state) => {
+      return state.products.filter(p => p.status === true);
+    }
+  },
   actions: {
+    // 1. Tải toàn bộ thuộc tính dùng chung
+    async fetchAllAttributes() {
+      try {
+        const [brandRes, catRes, originRes, colorRes, sizeRes] = await Promise.all([
+          axiosInstance.get('/brands'),
+          axiosInstance.get('/categories'),
+          axiosInstance.get('/origins'),
+          axiosInstance.get('/colors'),
+          axiosInstance.get('/sizes')
+        ]);
+        
+        // CÁCH GÁN BẤT TỬ: Tự động dò tìm đúng mảng dữ liệu
+        this.brands = brandRes?.data?.data || brandRes?.data || [];
+        this.categories = catRes?.data?.data || catRes?.data || [];
+        this.origins = originRes?.data?.data || originRes?.data || [];
+        this.colors = colorRes?.data?.data || colorRes?.data || [];
+        this.sizes = sizeRes?.data?.data || sizeRes?.data || [];
+      } catch (error) {
+        console.error("Lỗi khi tải thuộc tính:", error);
+      }
+    },
+
     // ==========================================
-    // MODULE 1: QUẢN LÝ SẢN PHẨM CHÍNH (PRODUCT)
+    // MODULE 1: SẢN PHẨM CHA (PRODUCT)
     // ==========================================
     async fetchProducts() {
-      this.isLoading = true;
+      this.loading = true;
       try {
-        const res = await productApi.getAll();
-        const actualData = res.data?.data ? res.data.data : res.data;
-        if (actualData) {
-          this.products = actualData;
-        }
-      } catch (err) {
-        console.error("Fetch Products Error:", err);
+        // Thay vì gọi getAllProducts, hãy gọi getPublicProducts
+        const response = await productApi.getPublicProducts();
+        this.products = response?.data?.data || response?.data || []; 
+      } catch (error) {
+        console.error("Lỗi tải danh sách sản phẩm:", error);
       } finally {
-        this.isLoading = false;
+        this.loading = false;
       }
     },
 
-    async createProduct(productData) {
-      this.isLoading = true;
-      try {
-        const res = await productApi.create(productData);
-        if (res.data && res.data.success) {
-          await this.fetchProducts();
-          return res.data;
-        }
-      } catch (err) {
-        console.error("Lỗi khi thêm sản phẩm:", err);
-        throw err;
-      } finally {
-        this.isLoading = false;
-      }
+    async createProduct(formData) {
+      await productApi.createProduct(formData);
     },
 
-    async updateProduct(id, productData) {
-      this.isLoading = true;
-      try {
-        const res = await productApi.update(id, productData);
-        if (res.data && res.data.success) {
-          await this.fetchProducts();
-          return res.data;
-        }
-      } catch (err) {
-        console.error("Lỗi khi cập nhật sản phẩm:", err);
-        throw err;
-      } finally {
-        this.isLoading = false;
-      }
+    async updateProduct(id, formData) {
+      await productApi.updateProduct(id, formData);
     },
 
     async deleteProduct(id) {
-      this.isLoading = true;
-      try {
-        const res = await productApi.delete(id);
-        if (res.data && res.data.success) {
-          await this.fetchProducts();
-          return res.data;
-        }
-      } catch (err) {
-        console.error("Lỗi khi xóa sản phẩm:", err);
-        throw err;
-      } finally {
-        this.isLoading = false;
-      }
+      await productApi.deleteProduct(id);
     },
 
     // ==========================================
-    // MODULE 2: QUẢN LÝ THUỘC TÍNH (ATTRIBUTES)
-    // ==========================================
-    async fetchAllAttributes() {
-      this.isLoading = true;
-      try {
-        const [b, c, cl, s, o] = await Promise.all([
-          brandApi.getAll(),
-          categoryApi.getAll(),
-          colorApi.getAll(),
-          sizeApi.getAll(),
-          originApi.getAll(),
-        ]);
-
-        const extractList = (res) => {
-          if (res?.data?.data && Array.isArray(res.data.data)) return res.data.data;
-          if (res?.data && Array.isArray(res.data)) return res.data;
-          return [];
-        };
-
-        this.brands = extractList(b);
-        this.categories = extractList(c);
-        this.colors = extractList(cl);
-        this.sizes = extractList(s);
-        this.origins = extractList(o);
-        
-      } catch (err) {
-        console.error("Store Attribute Error:", err);
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    // ==========================================
-    // MODULE 3: QUẢN LÝ BIẾN THỂ (PRODUCT DETAIL)
+    // MODULE 2: BIẾN THỂ SẢN PHẨM (PRODUCT DETAIL/SKU)
     // ==========================================
     async fetchProductVariants(productId) {
-      this.isLoading = true;
+      this.loading = true;
       try {
-        const res = await productDetailApi.getByProductId(productId);
-        // Lấy dữ liệu an toàn tương tự như product
-        const actualData = res.data?.data ? res.data.data : res.data;
-        if (actualData) {
-          this.productDetails = actualData;
-        }
-      } catch (err) {
-        console.error("Fetch Variants Error:", err);
+        // GỌI API PUBLIC thay vì API của Admin
+        const response = await productDetailApi.getPublicDetailsByProductId(productId);
+        this.productDetails = response?.data?.data || response?.data || [];
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách biến thể:", error);
       } finally {
-        this.isLoading = false;
+        this.loading = false;
       }
     },
 
-    // 7. Thêm biến thể mới
-    async createProductDetail(data) {
-      this.isLoading = true;
+    async createProductDetail(formData) {
       try {
-        const res = await productDetailApi.create(data);
-        return res.data;
-      } catch (err) {
-        console.error("Lỗi thêm biến thể:", err);
-        throw err;
-      } finally {
-        this.isLoading = false;
+        const response = await productDetailApi.createDetail(formData);
+        return response.data;
+      } catch (error) {
+        throw error;
       }
     },
 
-    // 8. Cập nhật biến thể
-    async updateProductDetail(id, data) {
-      this.isLoading = true;
+    async updateProductDetail(id, formData) {
       try {
-        const res = await productDetailApi.update(id, data);
-        return res.data;
-      } catch (err) {
-        console.error("Lỗi sửa biến thể:", err);
-        throw err;
-      } finally {
-        this.isLoading = false;
+        const response = await productDetailApi.updateDetail(id, formData);
+        return response.data;
+      } catch (error) {
+        throw error;
       }
     },
 
-    // 9. Xóa biến thể
     async deleteProductDetail(id) {
-      this.isLoading = true;
       try {
-        const res = await productDetailApi.delete(id);
-        return res.data;
-      } catch (err) {
-        console.error("Lỗi xóa biến thể:", err);
-        throw err;
-      } finally {
-        this.isLoading = false;
+        const response = await productDetailApi.deleteDetail(id);
+        return response.data;
+      } catch (error) {
+        throw error;
       }
     }
   }

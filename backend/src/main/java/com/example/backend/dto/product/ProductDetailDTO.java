@@ -1,46 +1,51 @@
 package com.example.backend.dto.product;
 
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
+import com.example.backend.dto.baseDTO.BaseDTO;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.constraints.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 
-@Getter
-@Setter
-public class ProductDetailDTO {
+@Data
+@EqualsAndHashCode(callSuper = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ProductDetailDTO extends BaseDTO {
 
-    private Integer id;
+    // --- Data từ Client gửi lên ---
+    @NotNull(message = "ID Sản phẩm cha không được để trống")
+    private Integer productId;
 
-    @NotNull(message = "Sản phẩm cha không được để trống")
-    private Integer idProduct;
+    @NotNull(message = "ID Màu sắc không được để trống")
+    private Integer colorId;
 
-    @NotNull(message = "Màu sắc không được để trống")
-    private Integer idColor;
+    @NotNull(message = "ID Kích cỡ không được để trống")
+    private Integer sizeId;
 
-    @NotNull(message = "Kích cỡ không được để trống")
-    private Integer idSize;
+    // --- Data trả về cho Client hiển thị ---
+    private ProductDTO product;
+    private ColorDTO color;
+    private SizeDTO size;
 
+    // --- Thông tin cơ bản ---
+    @Size(max = 50)
     private String code;
 
     @NotBlank(message = "Tên chi tiết sản phẩm không được để trống")
+    @Size(max = 255)
     private String name;
 
     private String image;
 
     @NotNull(message = "Giá bán không được để trống")
-    @Min(value = 0, message = "Giá bán không được nhỏ hơn 0")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Giá bán phải lớn hơn 0")
     private BigDecimal price;
 
     @NotNull(message = "Số lượng không được để trống")
-    @Min(value = 0, message = "Số lượng tồn kho không được nhỏ hơn 0")
+    @Min(value = 0, message = "Số lượng tồn kho không được âm")
     private Integer quantity;
 
     @NotNull(message = "Trạng thái không được để trống")
     private Boolean status;
-
-    private String colorName;
-    private String sizeName;
 }

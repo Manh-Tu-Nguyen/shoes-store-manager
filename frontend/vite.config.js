@@ -1,35 +1,17 @@
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import path from 'path'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    tailwindcss(),
+  ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
-  },
-  build: {
-    // Tối ưu hóa đóng gói sả phẩm
-    chunkSizeWarningLimit: 1600,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            return id.toString().split('node_modules/')[1].split('/')[0].toString();
-          }
-        },
-      },
-    },
-  },
+      // Dòng này cực kỳ quan trọng: Định nghĩa '@' chính là thư mục 'src'
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
+  }
 })

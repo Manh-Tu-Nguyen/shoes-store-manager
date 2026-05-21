@@ -1,11 +1,11 @@
 import axiosInstance from './axios';
 
 const colorApi = {
-    getAll: () => axiosInstance.get('/Colors'),
-    getById: (id) => axiosInstance.get(`/Colors/${id}`),
-    create: (data) => axiosInstance.post('/Colors', data),
-    update: (id, data) => axiosInstance.put(`/Colors/${id}`, data),
-    delete: (id) => axiosInstance.delete(`/Colors/${id}`)
+    getAll: () => axiosInstance.get('/colors'),
+  getById: (id) => axiosInstance.get(`/colors/${id}`),
+  create: (payload) => axiosInstance.post('/colors', payload),
+  update: (id, payload) => axiosInstance.put(`/colors/${id}`, payload),
+  delete: (id) => axiosInstance.delete(`/colors/${id}`),
 };
 
 export default colorApi;

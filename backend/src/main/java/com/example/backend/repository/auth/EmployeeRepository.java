@@ -1,19 +1,23 @@
 package com.example.backend.repository.auth;
 
-
 import com.example.backend.entity.auth.Employee;
-import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository; // Đổi sang JpaRepository
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
-    Optional<Employee> findByCode(String code);
-    Optional<Employee> findByEmail(String email);
-    Optional<Employee> findByAccount(String account);
+public interface EmployeeRepository extends JpaRepository<Employee, Integer> { // Kế thừa JpaRepository
+    Employee save(Employee employee);
+    @EntityGraph(attributePaths = {"role", "workShift"})
+    List<Employee> findAll();
 
-    boolean existsByCode(String code);
-    boolean existsByEmail(String email);
-    boolean existsByAccount(String account);
+    @EntityGraph(attributePaths = {"role", "workShift"})
+    Optional<Employee> findById(Integer id);
+
+    // BẮT BUỘC PHẢI CÓ ENTITY GRAPH ĐỂ KÉO QUYỀN LÚC ĐĂNG NHẬP
+    @EntityGraph(attributePaths = {"role"})
+    Optional<Employee> findByEmail(String email);
 }
