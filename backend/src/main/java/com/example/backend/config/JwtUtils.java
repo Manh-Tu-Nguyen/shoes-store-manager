@@ -1,6 +1,5 @@
 package com.example.backend.config;
 
-import com.example.backend.entity.auth.Employee;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
@@ -9,17 +8,18 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
+/**
+ * MỤC ĐÍCH KIẾN TRÚC (LỚN): ĐỘNG CƠ QUẢN LÝ VÒNG ĐỜI TOKEN MÃ HÓA
+ * Đóng gói toàn bộ các tiến trình xử lý liên quan đến cấu trúc JWT bao gồm: Khởi tạo chuỗi ký
+ * bảo mật, kiểm tra tính toàn vẹn của token mạng và giải mã cấu trúc thông tin (Claims).
+ */
 @Component
 public class JwtUtils {
 
-    // CHÚ Ý: Chuỗi bí mật này phải dài ít nhất 32 ký tự để thuật toán HMAC-SHA256 hoạt động.
-    // Trong thực tế, chuỗi này sẽ được cất ở file application.properties
     private final String jwtSecret = "======================ShoesStoreMiniBankingSecretKey2026======================";
-
-    // Thời gian sống của Token: 24 giờ (Tính bằng Milliseconds)
     private final long jwtExpirationMs = 86400000;
 
-    // SỬA LẠI THAM SỐ ĐẦU VÀO CỦA HÀM NÀY
+    // MỤC ĐÍCH MODULE (VỪA): TUẦN TỰ HÓA DỮ LIỆU TÀI KHOẢN THÀNH CHUỖI PAYLOAD BẢO MẬT
     public String generateJwtToken(AccountPrincipal principal) {
         return Jwts.builder()
                 .subject(principal.getEmail())
@@ -31,33 +31,34 @@ public class JwtUtils {
                 .signWith(getSigningKey())
                 .compact();
     }
-    // 1. Tạo chìa khóa (Dùng chung cho cả mã hóa và giải mã)
+
+    // MỤC ĐÍCH MODULE (VỪA): KHỞI TẠO KHÓA KÝ ĐỐI XỨNG CHUẨN HMAC-SHA256
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    // 2. Kiểm tra Token có hợp lệ không (Đúng chữ ký, chưa hết hạn)
+    // MỤC ĐÍCH MODULE (VỪA): KIỂM TRA TÍNH HỢP LỆ CỦA CHỮ KÝ MÃ HÓA VÀ THỜI GIAN HẾT HẠN CHRONO
     public boolean validateJwtToken(String authToken) {
         try {
             Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(authToken);
             return true;
         } catch (Exception e) {
-            System.err.println("Lỗi xác thực Token: " + e.getMessage());
-            return false; // Nếu token bị giả mạo hoặc hết hạn -> Trả về false
+            System.err.println("Xác thực chữ ký mã hóa JWT thất bại: " + e.getMessage());
+            return false;
         }
     }
 
-    // 3. Rút trích thông tin Email từ Token
+    // MỤC ĐÍCH MODULE (VỪA): GIẢI TUẦN TỰ HÓA TOKEN VÀ PHÂN TÁCH TRƯỜNG DỮ LIỆU ĐỘC LẬP
     public String getEmailFromJwtToken(String token) {
         return Jwts.parser().verifyWith(getSigningKey()).build()
                 .parseSignedClaims(token).getPayload().getSubject();
     }
 
-    // 4. Rút trích Quyền (Role) từ Payload của Token
     public String getRoleFromJwtToken(String token) {
         return Jwts.parser().verifyWith(getSigningKey()).build()
                 .parseSignedClaims(token).getPayload().get("role", String.class);
     }
+
     public Integer getIdFromJwtToken(String token) {
         return Jwts.parser().verifyWith(getSigningKey()).build()
                 .parseSignedClaims(token).getPayload().get("id", Integer.class);

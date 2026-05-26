@@ -11,4 +11,6 @@ public interface ColorRepository extends Repository<Color, Integer> {
     Color save(Color color);
     List<Color> findAll();
     Optional<Color> findById(Integer id);
+    boolean existsByName(String name);
+    boolean existsByNameAndIdNot(String name, Integer id);
 }

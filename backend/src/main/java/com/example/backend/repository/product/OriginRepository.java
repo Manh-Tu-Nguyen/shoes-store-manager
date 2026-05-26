@@ -11,4 +11,7 @@ public interface OriginRepository extends Repository<Origin, Integer> {
     Origin save(Origin origin);
     List<Origin> findAll();
     Optional<Origin> findById(Integer id);
+    boolean existsByName(String name);
+    boolean existsByNameAndIdNot(String name, Integer id);
+    boolean existsByCode(String code);
 }

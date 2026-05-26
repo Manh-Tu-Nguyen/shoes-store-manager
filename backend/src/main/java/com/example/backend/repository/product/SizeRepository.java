@@ -11,4 +11,6 @@ public interface SizeRepository extends Repository<Size, Integer> {
     Size save(Size size);
     List<Size> findAll();
     Optional<Size> findById(Integer id);
+    boolean existsByName(String name);
+    boolean existsByNameAndIdNot(String name, Integer id);
 }

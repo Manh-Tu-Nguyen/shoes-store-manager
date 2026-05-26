@@ -2,19 +2,23 @@ package com.example.backend.entity.code;
 
 import lombok.Getter;
 
+/**
+ * MỤC ĐÍCH KIẾN TRÚC (LỚN): DANH MỤC QUY ƯỚC CẤU HÌNH TIỀN TỐ MÃ ĐỊNH DANH TOÀN HỆ THỐNG
+ * Khai báo tập trung, bất biến toàn bộ các cấu trúc quy chuẩn độ dài và chữ ký tiền tố của
+ * các thực thể vật lý trong cơ sở dữ liệu, phục vụ trực tiếp cho động cơ sinh số tự động.
+ */
 @Getter
 public enum CodeType {
-    // Tên Table | Tiền tố | Độ dài phần số (VD: 4 -> 0001)
     EMPLOYEE("NV", 4),
     CUSTOMER("KH", 5),
     ORDER("ORD", 6),
     PRODUCT("SP", 5),
     VOUCHER("VC", 4),
-    PAYMENT("PAY", 8),    // Đổi ; thành ,
-    BRAND("BR", 4),       // Đổi ; thành ,
-    CATEGORY("CAT", 4),   // Đổi ; thành ,
-    COLOR("MS", 4),       // Đổi ; thành ,
-    SIZE("KC", 4);        // Dấu ; kết thúc nằm ở đây
+    PAYMENT("PAY", 8),
+    BRAND("BR", 4),
+    CATEGORY("CAT", 4),
+    COLOR("MS", 4),
+    SIZE("KC", 4);
 
     private final String prefix;
     private final int paddingLength;

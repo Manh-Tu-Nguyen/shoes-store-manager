@@ -56,7 +56,6 @@ public class EmployeeDTO extends BaseDTO {
     private String account;
 
     // QUAN TRỌNG: Chỉ cho phép ghi (nhận từ Client), không bao giờ trả về Client
-    @NotBlank(message = "Mật khẩu không được để trống")
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 

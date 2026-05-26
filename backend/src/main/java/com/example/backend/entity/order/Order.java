@@ -88,7 +88,7 @@ public class Order extends BaseEntity {
 
     @NotNull(message = "Trạng thái không được để trống")
     @Column(name = "status", nullable = false)
-    private Integer status; // Dùng Integer vì có nhiều trạng thái (0, 1, 2, 3...)
+    private Integer status;
     @Column(name = "order_type", length = 20)
     private String orderType;
 }

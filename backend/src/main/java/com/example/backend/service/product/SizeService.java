@@ -21,18 +21,15 @@ public class SizeService {
     private final com.example.backend.service.code.SequenceGeneratorService sequenceGeneratorService;
 
     public List<SizeDTO> getAllSizes() {
-        return sizeRepository.findAll().stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+        return sizeRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
     public SizeDTO getSizeById(Integer id) {
         Size size = sizeRepository.findById(id)
-                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy thương hiệu với ID: " + id));
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy kích cỡ với ID: " + id));
         return mapToDTO(size);
     }
 
-    // Hàm Map nội bộ giúp code tái sử dụng tốt hơn
     private SizeDTO mapToDTO(Size entity) {
         SizeDTO dto = new SizeDTO();
         dto.setId(entity.getId());
@@ -43,32 +40,40 @@ public class SizeService {
         dto.setUpdatedAt(entity.getUpdatedAt());
         return dto;
     }
+
     @Transactional
     public SizeDTO create(SizeDTO dto) {
+        if (sizeRepository.existsByName(dto.getName().trim())) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Kích cỡ này đã tồn tại trong hệ thống!");
+        }
+
         Size entity = new Size();
-        entity.setName(dto.getName());
+        entity.setName(dto.getName().trim());
         entity.setStatus(dto.getStatus());
-        // GỌI SINH MÃ TỰ ĐỘNG Ở ĐÂY
-        String autoCode = sequenceGeneratorService.generateCode(CodeType.SIZE);
-        entity.setCode(autoCode);
+        entity.setCode(sequenceGeneratorService.generateCode(CodeType.SIZE));
 
         return mapToDTO(sizeRepository.save(entity));
     }
-    
+
     @Transactional
     public SizeDTO update(Integer id, SizeDTO dto) {
         Size entity = sizeRepository.findById(id)
-                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy!"));
-        entity.setName(dto.getName());
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy kích cỡ!"));
+
+        if (sizeRepository.existsByNameAndIdNot(dto.getName().trim(), id)) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Kích cỡ này đã được sử dụng!");
+        }
+
+        entity.setName(dto.getName().trim());
         entity.setStatus(dto.getStatus());
         return mapToDTO(sizeRepository.save(entity));
     }
-    
+
     @Transactional
     public void delete(Integer id) {
         Size entity = sizeRepository.findById(id)
-                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy!"));
-        entity.setStatus(false); // Xóa mềm
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy kích cỡ!"));
+        entity.setStatus(false);
         sizeRepository.save(entity);
     }
 }

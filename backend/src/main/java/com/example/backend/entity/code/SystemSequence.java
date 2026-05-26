@@ -13,6 +13,6 @@ import lombok.*;
 @AllArgsConstructor
 public class SystemSequence {
     @Id
-    private String prefix; // Lưu "NV", "KH", "ORD"
+    private String prefix;
     private Long nextValue;
 }

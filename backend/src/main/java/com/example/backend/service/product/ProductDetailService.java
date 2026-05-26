@@ -22,6 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * MỤC ĐÍCH KIẾN TRÚC (LỚN): LÕI QUẢN LÝ BIẾN THỂ SẢN PHẨM VÀ TOÀN VẸN SKU KHO HÀNG
+ * Chịu trách nhiệm thực thi các quy tắc nghiệp vụ liên quan đến quản lý SKU (Stock Keeping Unit).
+ * Đảm bảo tính duy nhất của cấu trúc tổ hợp biến thể và kiểm soát vòng đời tồn kho.
+ */
 @Service
 @RequiredArgsConstructor
 public class ProductDetailService {
@@ -31,18 +36,32 @@ public class ProductDetailService {
     private final ColorRepository colorRepository;
     private final SizeRepository sizeRepository;
 
+    @Transactional(readOnly = true)
+    public List<ProductDetailDTO> getAllProductsDetails() {
+        return productDetailRepository.findAll().stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public ProductDetailDTO getProductDetailById(Integer id) {
         ProductDetail detail = productDetailRepository.findById(id)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy biến thể sản phẩm với ID: " + id));
         return mapToDTO(detail);
     }
 
+    @Transactional(readOnly = true)
     public List<ProductDetailDTO> getProductDetailsByProductId(Integer productId) {
         return productDetailRepository.findAllByProductId(productId).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * MỤC ĐÍCH MODULE (VỪA): ÁNH XẠ DỮ LIỆU AN TOÀN VÀ ĐÁNH GIÁ TRẠNG THÁI KHỞI TẠO PROXY
+     * Sử dụng phương thức Hibernate.isInitialized() để kiểm tra trạng thái nạp dữ liệu của proxy.
+     * Ngăn chặn triệt để lỗi sập luồng LazyInitializationException mà vẫn tối ưu hóa được số lượng câu lệnh SQL.
+     */
     private ProductDetailDTO mapToDTO(ProductDetail entity) {
         ProductDetailDTO dto = new ProductDetailDTO();
         dto.setId(entity.getId());
@@ -55,12 +74,8 @@ public class ProductDetailService {
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
 
-        // Map Product (Chỉ lấy ID để không bị LazyInitializationException)
         if (entity.getProduct() != null) {
             dto.setProductId(entity.getProduct().getId());
-
-            // Kỹ thuật nâng cao: Chỉ map chi tiết Product nếu EntityGraph đã fetch dữ liệu (Khi gọi getById)
-            // Nếu gọi findAllByProductId, Hibernate sẽ không fetch Product -> bỏ qua map Object, tránh lỗi N+1
             if (Hibernate.isInitialized(entity.getProduct())) {
                 ProductDTO productDTO = new ProductDTO();
                 productDTO.setId(entity.getProduct().getId());
@@ -70,7 +85,6 @@ public class ProductDetailService {
             }
         }
 
-        // Map Color
         if (entity.getColor() != null) {
             dto.setColorId(entity.getColor().getId());
             ColorDTO colorDTO = new ColorDTO();
@@ -79,7 +93,6 @@ public class ProductDetailService {
             dto.setColor(colorDTO);
         }
 
-        // Map Size
         if (entity.getSize() != null) {
             dto.setSizeId(entity.getSize().getId());
             SizeDTO sizeDTO = new SizeDTO();
@@ -91,9 +104,21 @@ public class ProductDetailService {
         return dto;
     }
 
+    /**
+     * MỤC ĐÍCH MODULE (VỪA): KHỞI TẠO COMPOSITE SKU VÀ KIỂM TRA ĐIỀU KIỆN RÀNG BUỘC CHÉO
+     * Tự động băm nhỏ và tổ hợp mã định danh duy nhất (Mã SP - Mã Màu - Kích cỡ) dạng chữ viết hoa.
+     * Ngăn chặn từ sớm việc tạo trùng lặp biến thể trước khi SQL Server ném lỗi ràng buộc cứng.
+     */
     @Transactional
     public ProductDetailDTO createProductDetail(ProductDetailDTO requestDTO) {
-        // 1. Lấy thông tin các thực thể liên quan
+        boolean exists = productDetailRepository.existsByProductIdAndColorIdAndSizeId(
+                requestDTO.getProductId(),
+                requestDTO.getColorId(),
+                requestDTO.getSizeId()
+        );
+        if (exists) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Biến thể (Màu sắc + Kích cỡ) này đã tồn tại!");
+        }
         Product product = productRepository.findById(requestDTO.getProductId())
                 .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Sản phẩm cha không tồn tại!"));
         Color color = colorRepository.findById(requestDTO.getColorId())
@@ -103,8 +128,6 @@ public class ProductDetailService {
 
         ProductDetail detail = new ProductDetail();
 
-        // 2. LOGIC TẠO MÃ SKU THÔNG MINH (Composite Code)
-        // Kết quả: "SP0001-RED-39"
         String skuCode = String.format("%s-%s-%s",
                 product.getCode(),
                 color.getCode(),
@@ -113,40 +136,42 @@ public class ProductDetailService {
 
         detail.setCode(skuCode);
 
-        // Tự động tạo tên biến thể đầy đủ cho hiển thị giỏ hàng
-        // Kết quả: "Nike Air Zoom - Đỏ - 39"
         String skuName = String.format("%s - %s - %s",
                 product.getName(),
                 color.getName(),
                 size.getName()
         );
         detail.setName(skuName);
-
-        // 3. Map các trường còn lại
-        detail.setImage(requestDTO.getImage()); // Ảnh riêng của màu này
+        detail.setImage(requestDTO.getImage());
         detail.setPrice(requestDTO.getPrice());
         detail.setQuantity(requestDTO.getQuantity());
         detail.setStatus(requestDTO.getStatus());
-
         detail.setProduct(product);
         detail.setColor(color);
         detail.setSize(size);
 
-        // 4. Lưu và trả về
-        ProductDetail savedDetail = productDetailRepository.save(detail);
-        return mapToDTO(savedDetail);
-
-
+        return mapToDTO(productDetailRepository.save(detail));
     }
 
+    /**
+     * MỤC ĐÍCH MODULE (VỪA): CÔ LẬP PHẠM VI BIẾN ĐỔI THUỘC TÍNH BẤT BIẾN CỦA SKU
+     * Chặn tuyệt đối hành vi sửa Màu/Size của SKU cũ để bảo vệ tính nhất quán của lịch sử hóa đơn.
+     * Ép hệ thống tuân thủ nguyên tắc E-Commerce: Muốn đổi màu/size, bắt buộc phải Xóa mềm SKU cũ và Tạo SKU mới.
+     */
     @Transactional
     public ProductDetailDTO updateProductDetail(Integer id, ProductDetailDTO requestDTO) {
         ProductDetail detail = productDetailRepository.findById(id)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy biến thể!"));
 
-        // Chỉ cho phép cập nhật Giá, Số lượng, Ảnh và Trạng thái
-        // KHÔNG CẬP NHẬT Màu/Size vì nó sẽ phá vỡ logic Mã SKU (Ví dụ: Đổi từ Đỏ sang Xanh thì mã SKU-RED sẽ bị sai).
-        // Nếu muốn đổi màu/size, nguyên tắc chuẩn của E-Commerce là Xóa mềm SKU cũ và Tạo SKU mới.
+        boolean exists = productDetailRepository.existsByProductIdAndColorIdAndSizeId(
+                requestDTO.getProductId(),
+                requestDTO.getColorId(),
+                requestDTO.getSizeId()
+        );
+        if (exists) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Biến thể (Màu sắc + Kích cỡ) này đã tồn tại!");
+        }
+
         detail.setPrice(requestDTO.getPrice());
         detail.setQuantity(requestDTO.getQuantity());
         detail.setStatus(requestDTO.getStatus());
@@ -159,7 +184,7 @@ public class ProductDetailService {
     public void deleteProductDetail(Integer id) {
         ProductDetail detail = productDetailRepository.findById(id)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy biến thể!"));
-        // Xóa mềm
+        // THỰC THI LUỒNG XÓA MỀM (SOFT DELETE) ĐỂ TRÁNH GÃY KHÓA NGOẠI HOÁ ĐƠN CŨ
         detail.setStatus(false);
         productDetailRepository.save(detail);
     }

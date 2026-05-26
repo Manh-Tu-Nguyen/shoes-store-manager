@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { createRouter, createWebHistory } from 'vue-router';
 
 // Lazy loading components để tối ưu hiệu năng
@@ -12,6 +13,7 @@ const routes = [
     children: [
       { path: '', name: 'client-home', component: () => import('@/page/client/Home.vue') },
       { path: 'product/:id', name: 'client-product-detail', component: () => import('@/page/client/ProductClientDetail.vue') },
+      { path: 'cart', name: 'client-cart', component: () => import('@/page/client/Cart.vue') },
       { path: 'checkout', name: 'client-checkout', component: () => import('@/page/client/Checkout.vue') }
     ]
   },
@@ -33,7 +35,8 @@ const routes = [
       { path: 'customers/:id/addresses', name: 'admin-customer-addresses', component: () => import('@/page/admin/Address.vue') },
       { path: 'employees', name: 'admin-employees', component: () => import('@/page/admin/Employee.vue') },
       { path: 'work-shifts', name: 'admin-work-shifts', component: () => import('@/page/admin/WorkShift.vue') },
-      { path: 'orders', name: 'admin-orders', component: () => import('@/page/admin/Order.vue') }
+      { path: 'orders', name: 'admin-orders', component: () => import('@/page/admin/Order.vue') },
+      { path: 'vouchers', name: 'admin-vouchers', component: () => import('@/page/admin/Voucher.vue') }
     ]
   },
 

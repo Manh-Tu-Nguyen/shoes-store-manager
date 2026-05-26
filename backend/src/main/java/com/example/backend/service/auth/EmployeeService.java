@@ -31,18 +31,29 @@ public class EmployeeService {
 
     @Transactional
     public EmployeeDTO createEmployee(EmployeeDTO dto) {
-        Employee employee = new Employee();
+        if (employeeRepository.existsByAccount(dto.getAccount())) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Tài khoản nhân viên đã tồn tại!");
+        }
+        if (employeeRepository.existsByEmail(dto.getEmail())) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Email nhân viên đã tồn tại!");
+        }
+        // Kiểm tra thủ công thay thế cho @NotBlank của DTO lúc tạo mới
+        if (dto.getAccount() == null || dto.getAccount().isBlank()) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Tài khoản không được để trống khi tạo mới!");
+        }
+        if (dto.getPassword() == null || dto.getPassword().isBlank()) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Mật khẩu không được để trống khi tạo mới!");
+        }
 
-        // --- VÁ LỖI THIẾU TRƯỜNG ---
-        employee.setSalary(dto.getSalary());
-        employee.setPassword(dto.getPassword()); // Thực tế nên mã hóa (BCrypt) trước khi lưu
+        Employee employee = new Employee();
         employee.setAccount(dto.getAccount());
-        // Lấy Role và WorkShift từ DB bằng ID gửi lên
+        employee.setPassword(dto.getPassword()); // Thực tế cần mã hóa BCrypt tại đây
+        employee.setSalary(dto.getSalary());
+
         employee.setRole(roleRepository.findById(dto.getRoleId())
                 .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Role không tồn tại")));
         employee.setWorkShift(workShiftRepository.findById(dto.getWorkShiftId())
                 .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Ca làm việc không tồn tại")));
-        // ---------------------------
 
         employee.setFirstName(dto.getFirstName());
         employee.setLastName(dto.getLastName());
@@ -50,7 +61,6 @@ public class EmployeeService {
         employee.setEmail(dto.getEmail());
         employee.setBirthday(dto.getBirthday());
         employee.setGender(dto.getGender());
-        employee.setStatus(dto.getStatus());
         if (dto.getImage() != null) employee.setImage(dto.getImage());
 
         employee.setCode(sequenceGeneratorService.generateCode(CodeType.EMPLOYEE));
@@ -60,17 +70,21 @@ public class EmployeeService {
 
     @Transactional
     public EmployeeDTO updateEmployee(Integer id, EmployeeDTO dto) {
+        if (employeeRepository.existsByAccountAndIdNot(dto.getAccount(), id)) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Tài khoản này đã thuộc về nhân viên khác!");
+        }
+        if (employeeRepository.existsByAccountAndIdNot(dto.getEmail(), id)) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Email này đã thuộc về nhân viên khác!");
+        }
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy nhân viên"));
 
-        // --- VÁ LỖI THIẾU TRƯỜNG ---
+        // TUYỆT ĐỐI KHÔNG SET ACCOUNT VÀ PASSWORD TẠI ĐÂY (Đã xóa bỏ hoàn toàn)
         employee.setSalary(dto.getSalary());
         employee.setRole(roleRepository.findById(dto.getRoleId())
                 .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Role không tồn tại")));
         employee.setWorkShift(workShiftRepository.findById(dto.getWorkShiftId())
                 .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Ca làm việc không tồn tại")));
-        // Lưu ý: Thường Update không update password chung với profile. Nếu muốn có thể thêm check.
-        // ---------------------------
 
         employee.setFirstName(dto.getFirstName());
         employee.setLastName(dto.getLastName());
@@ -78,7 +92,6 @@ public class EmployeeService {
         employee.setEmail(dto.getEmail());
         employee.setBirthday(dto.getBirthday());
         employee.setGender(dto.getGender());
-        employee.setAccount(dto.getAccount());
         employee.setStatus(dto.getStatus());
         if (dto.getImage() != null) employee.setImage(dto.getImage());
 

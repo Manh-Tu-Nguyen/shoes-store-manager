@@ -3,47 +3,45 @@ package com.example.backend.config;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+/**
+ * MỤC ĐÍCH KIẾN TRÚC (LỚN): BỘ TRÍCH XUẤT DỮ LIỆU PHIÊN BẢO MẬT TRÊN RAM
+ * Cung cấp các phương thức tĩnh tiện ích nhằm bóc tách thông tin tài khoản người dùng trực tiếp từ
+ * luồng đệm bộ nhớ (Thread Local) của JVM hiện tại mà không phải tốn tài nguyên quét Database.
+ */
 public class SecurityUtils {
 
-    /**
-     * Lấy Email của người dùng đang đăng nhập từ Security Context.
-     * Trả về null nếu là khách vãng lai (Guest).
-     */
+    // MỤC ĐÍCH MODULE (VỪA): TRÍCH XUẤT THÔNG TIN ĐỊNH DANH USER CỐT LÕI TỪ PRINCIPAL CONTEXT
     public static String getCurrentUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
         if (authentication != null && authentication.isAuthenticated()
                 && !authentication.getPrincipal().equals("anonymousUser")) {
-            return authentication.getName(); // Trả về subject (Email) đã set ở Filter
+            return authentication.getName();
         }
         return null;
     }
+
     public static Integer getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
-            // Giả định JwtAuthFilter của bạn đã set AccountPrincipal vào Context
             if (auth.getPrincipal() instanceof AccountPrincipal) {
                 return ((AccountPrincipal) auth.getPrincipal()).getId();
             }
-            // Hoặc nếu bạn lưu ID dưới dạng String trong authorities/credentials thì ép kiểu tương ứng
         }
         return null;
     }
 
-    /**
-     * Kiểm tra xem Request hiện tại có phải của người dùng đã đăng nhập không.
-     */
     public static boolean isAuthenticated() {
         return getCurrentUserEmail() != null;
     }
+
+    // MỤC ĐÍCH MODULE (VỪA): KIỂM TOÁN QUYỀN TRUY CẬP RUNTIME THÔNG QUA PHẢN CHIẾU AUTHORITIES
     public static String getCurrentUserRole() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
-            // Trích xuất quyền từ authorities đã set trong JwtAuthFilter
             return auth.getAuthorities().stream()
                     .map(grantedAuthority -> grantedAuthority.getAuthority())
                     .findFirst()
-                    .orElse("CUSTOMER"); // Mặc định nếu không có quyền
+                    .orElse("CUSTOMER");
         }
         return "CUSTOMER";
     }

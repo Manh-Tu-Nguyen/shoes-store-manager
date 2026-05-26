@@ -2,3 +2,7 @@
 html{
   scroll-behavior: smooth;
 }
+/* Ép SweetAlert2 luôn hiển thị ở tầng cao nhất của màn hình */
+.swal2-container {
+  z-index: 9999 !important;
+}

@@ -6,23 +6,22 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-
 import java.time.LocalDate;
 
+// Cập nhật CustomerDTO.java
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CustomerDTO extends BaseDTO {
 
-    @NotBlank(message = "Mã khách hàng không được để trống")
-    private String code;
+    private String code; // Backend tự sinh, không cần @NotBlank
 
     private String image;
 
-    @NotBlank(message = "Họ không được để trống")
+    @NotBlank(message = "Họ khách hàng không được để trống")
     private String lastName;
 
-    @NotBlank(message = "Tên không được để trống")
+    @NotBlank(message = "Tên khách hàng không được để trống")
     private String firstName;
 
     @Email(message = "Email không đúng định dạng")
@@ -31,8 +30,10 @@ public class CustomerDTO extends BaseDTO {
     @Pattern(regexp = "(84|0[3|5|7|8|9])+([0-9]{8})\\b", message = "Số điện thoại không hợp lệ")
     private String phoneNumber;
 
+    @NotNull(message = "Giới tính không được để trống")
     private Boolean gender;
 
+    @NotNull(message = "Ngày sinh không được để trống")
     @Past(message = "Ngày sinh phải ở trong quá khứ")
     private LocalDate birthday;
 

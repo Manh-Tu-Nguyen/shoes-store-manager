@@ -22,6 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * MỤC ĐÍCH KIẾN TRÚC (LỚN): QUẢN LÝ THƯ MỤC SẢN PHẨM MẸ VÀ LOGIC KHÓA NGOẠI PHÂN TẦNG
+ * Đóng vai trò hạt nhân điều phối danh mục sản phẩm tổng thể, xác thực tính toàn vẹn
+ * dữ liệu của cấu trúc cây phân loại (Thương hiệu, Danh mục, Xuất xứ) trước khi lưu trữ.
+ */
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -32,12 +37,14 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
     private final OriginRepository originRepository;
 
+    @Transactional(readOnly = true)
     public List<ProductDTO> getAllProducts() {
         return productRepository.findAll().stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public ProductDTO getProductById(Integer id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với ID: " + id));
@@ -54,7 +61,6 @@ public class ProductService {
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
 
-        // Map Brand
         if (entity.getBrand() != null) {
             dto.setBrandId(entity.getBrand().getId());
             BrandDTO brandDTO = new BrandDTO();
@@ -63,7 +69,6 @@ public class ProductService {
             dto.setBrand(brandDTO);
         }
 
-        // Map Category
         if (entity.getCategory() != null) {
             dto.setCategoryId(entity.getCategory().getId());
             CategoryDTO categoryDTO = new CategoryDTO();
@@ -72,7 +77,6 @@ public class ProductService {
             dto.setCategory(categoryDTO);
         }
 
-        // Map Origin
         if (entity.getOrigin() != null) {
             dto.setOriginId(entity.getOrigin().getId());
             OriginDTO originDTO = new OriginDTO();
@@ -84,9 +88,16 @@ public class ProductService {
         return dto;
     }
 
+    /**
+     * MỤC ĐÍCH MODULE (VỪA): TÍCH HỢP CHUỖI SINH MÃ TỰ ĐỘNG VÀ KIỂM DUYỆT TRÙNG TÊN ĐẦU VÀO
+     * Kích hoạt kiểm tra khoảng trống chuỗi bằng phương thức `.trim()` để loại bỏ rác văn bản.
+     * Gọi liên kết luồng chéo sang bộ tạo mã Sequence tập trung để sinh mã định danh duy nhất dạng 'SP00001'.
+     */
     @Transactional
     public ProductDTO createProduct(ProductDTO requestDTO) {
-        // 1. Kiểm tra tồn tại của các khóa ngoại
+        if (productRepository.existsByName(requestDTO.getName().trim())) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Tên sản phẩm đã tồn tại!");
+        }
         Brand brand = brandRepository.findById(requestDTO.getBrandId())
                 .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Thương hiệu không tồn tại!"));
         Category category = categoryRepository.findById(requestDTO.getCategoryId())
@@ -94,28 +105,25 @@ public class ProductService {
         Origin origin = originRepository.findById(requestDTO.getOriginId())
                 .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Xuất xứ không tồn tại!"));
 
-        // 2. Khởi tạo Entity
         Product product = new Product();
 
-        // 3. TỰ ĐỘNG SINH MÃ (Ví dụ: SP0001)
         String newCode = sequenceGeneratorService.generateCode(CodeType.PRODUCT);
         product.setCode(newCode);
-
-        // 4. Map dữ liệu
         product.setName(requestDTO.getName());
         product.setImage(requestDTO.getImage());
         product.setStatus(requestDTO.getStatus());
-
         product.setBrand(brand);
         product.setCategory(category);
         product.setOrigin(origin);
 
-        // 5. Lưu xuống DB và trả về
-        Product savedProduct = productRepository.save(product);
-        return mapToDTO(savedProduct);
+        return mapToDTO(productRepository.save(product));
     }
+
     @Transactional
     public ProductDTO updateProduct(Integer id, ProductDTO requestDTO) {
+        if (productRepository.existsByName(requestDTO.getName().trim())) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Tên sản phẩm đã tồn tại!");
+        }
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm!"));
 
@@ -126,7 +134,6 @@ public class ProductService {
         Origin origin = originRepository.findById(requestDTO.getOriginId())
                 .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Xuất xứ không tồn tại!"));
 
-        // Cập nhật thông tin (Không cho phép đổi Mã code)
         product.setName(requestDTO.getName());
         product.setImage(requestDTO.getImage());
         product.setStatus(requestDTO.getStatus());
@@ -141,7 +148,7 @@ public class ProductService {
     public void deleteProduct(Integer id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm!"));
-        // Xóa mềm: Chuyển trạng thái về false (Ngừng kinh doanh)
+        // THỰC THI LUỒNG XÓA MỀM (SOFT DELETE) ĐỂ TRÁNH GÃY KHÓA NGOẠI HOÁ ĐƠN CŨ
         product.setStatus(false);
         productRepository.save(product);
     }

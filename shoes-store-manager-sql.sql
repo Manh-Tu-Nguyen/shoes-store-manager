@@ -1,7 +1,6 @@
 ﻿USE master;
 GO
 
--- 1. Khởi tạo Database sạch
 IF EXISTS (SELECT 1 FROM sys.databases WHERE name = 'SHOES_STORE_DB')
 BEGIN
     ALTER DATABASE SHOES_STORE_DB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
@@ -15,10 +14,8 @@ USE SHOES_STORE_DB;
 GO
 
 -- ======================================================================================
--- PHẦN 1: TẠO BẢNG ĐỒNG BỘ (FULL AUDIT COLUMNS)
+-- PHẦN 1: PHÂN QUYỀN & CA LÀM VIỆC
 -- ======================================================================================
-
--- 1.1 Phân quyền & Ca làm việc
 CREATE TABLE role(
     id INT IDENTITY(1,1) PRIMARY KEY,
     name NVARCHAR(100) NOT NULL,
@@ -35,7 +32,6 @@ CREATE TABLE work_shift(
     updated_at DATETIME DEFAULT GETDATE()
 );
 
--- 1.2 Nhân viên
 CREATE TABLE employee(
     id INT IDENTITY(1,1) PRIMARY KEY,
     id_workshift INT NOT NULL,
@@ -58,7 +54,9 @@ CREATE TABLE employee(
     FOREIGN KEY (id_role) REFERENCES role(id)
 );
 
--- 1.3 Khách hàng & Địa chỉ
+-- ======================================================================================
+-- PHẦN 2: KHÁCH HÀNG & GIAO VẬN
+-- ======================================================================================
 CREATE TABLE customer(
     id INT IDENTITY(1,1) PRIMARY KEY,
     code VARCHAR(50) UNIQUE NOT NULL,
@@ -90,7 +88,9 @@ CREATE TABLE address(
     FOREIGN KEY (id_customer) REFERENCES customer(id)
 );
 
--- 1.4 Thuộc tính Sản phẩm
+-- ======================================================================================
+-- PHẦN 3: THUỘC TÍNH SẢN PHẨM
+-- ======================================================================================
 CREATE TABLE brand(
     id INT IDENTITY(1,1) PRIMARY KEY,
     code VARCHAR(50) UNIQUE NOT NULL,
@@ -136,7 +136,9 @@ CREATE TABLE color(
     updated_at DATETIME DEFAULT GETDATE()
 );
 
--- 1.5 Sản phẩm & Chi tiết (SKU)
+-- ======================================================================================
+-- PHẦN 4: HÀNG HÓA VÀ KHO BIẾN THỂ (SKU)
+-- ======================================================================================
 CREATE TABLE product(
     id INT IDENTITY(1,1) PRIMARY KEY,
     id_brand INT NOT NULL,
@@ -168,10 +170,13 @@ CREATE TABLE product_detail(
     updated_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (id_product) REFERENCES product(id),
     FOREIGN KEY (id_color) REFERENCES color(id),
-    FOREIGN KEY (id_size) REFERENCES size(id)
+    FOREIGN KEY (id_size) REFERENCES size(id),
+    CONSTRAINT UQ_Product_Color_Size UNIQUE (id_product, id_color, id_size)
 );
 
--- 1.6 Khuyến mãi & Voucher
+-- ======================================================================================
+-- PHẦN 5: MARKETING
+-- ======================================================================================
 CREATE TABLE voucher(
     id INT IDENTITY(1,1) PRIMARY KEY,
     code VARCHAR(50) UNIQUE NOT NULL,
@@ -210,13 +215,16 @@ CREATE TABLE product_promotion(
     FOREIGN KEY (id_promotion) REFERENCES promotion(id)
 );
 
--- 1.7 Đơn hàng & Thanh toán
+-- ======================================================================================
+-- PHẦN 6: ĐƠN HÀNG & KIỂM TOÁN TÀI CHÍNH
+-- ======================================================================================
 CREATE TABLE orders(
     id INT IDENTITY(1,1) PRIMARY KEY,
     id_customer INT,
     id_employee INT,
     id_voucher INT,
     code VARCHAR(50) UNIQUE NOT NULL,
+    order_type VARCHAR(20) NOT NULL DEFAULT 'ONLINE',
     employee_code VARCHAR(50),
     employee_name NVARCHAR(255),
     customer_name NVARCHAR(255),
@@ -229,13 +237,26 @@ CREATE TABLE orders(
     voucher_discount_value DECIMAL(19, 2),
     shipping_fee DECIMAL(19, 2),
     final_amount DECIMAL(19, 2) NOT NULL,
-    status INT NOT NULL,
+    status INT NOT NULL, 
     note NVARCHAR(MAX),
     created_at DATETIME DEFAULT GETDATE(),
     updated_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (id_customer) REFERENCES customer(id),
     FOREIGN KEY (id_employee) REFERENCES employee(id),
     FOREIGN KEY (id_voucher) REFERENCES voucher(id)
+);
+
+--LƯU VẾT LỊCH SỬ CHUYỂN TRẠNG THÁI ĐƠN HÀNG (AUDIT TRAIL)
+CREATE TABLE order_status_history(
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    id_order INT NOT NULL,
+    id_employee INT, -- Ai là người thao tác (Null nếu hệ thống tự đổi như VNPAY)
+    old_status INT, -- Trạng thái cũ
+    new_status INT NOT NULL, -- Trạng thái mới
+    note NVARCHAR(MAX), -- Lý do hủy, ghi chú chuẩn bị hàng...
+    created_at DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (id_order) REFERENCES orders(id),
+    FOREIGN KEY (id_employee) REFERENCES employee(id)
 );
 
 CREATE TABLE order_detail(
@@ -255,16 +276,22 @@ CREATE TABLE payment(
     id INT IDENTITY(1,1) PRIMARY KEY,
     id_order INT NOT NULL,
     amount DECIMAL(19, 2) NOT NULL,
+    amount_tendered DECIMAL(19, 2) NOT NULL DEFAULT 0, 
+    change_amount DECIMAL(19, 2) NOT NULL DEFAULT 0,   
     payment_method INT NOT NULL,
     status INT NOT NULL,
     transaction_code VARCHAR(100),
     payment_date DATETIME DEFAULT GETDATE(),
-    updated_at DATETIME DEFAULT GETDATE(),
     note NVARCHAR(MAX),
+    -- Đã hợp nhất cột created_at và updated_at vào bảng
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (id_order) REFERENCES orders(id)
 );
 
--- 1.8 Giỏ hàng & Đánh giá
+-- ======================================================================================
+-- PHẦN 7: TƯƠNG TÁC & GIỎ HÀNG
+-- ======================================================================================
 CREATE TABLE cart(
     id INT IDENTITY(1,1) PRIMARY KEY,
     id_customer INT UNIQUE,
@@ -300,95 +327,74 @@ CREATE TABLE product_review(
     FOREIGN KEY (id_product) REFERENCES product(id),
     FOREIGN KEY (id_order) REFERENCES orders(id)
 );
+
 CREATE TABLE system_sequence (
     prefix VARCHAR(50) PRIMARY KEY,
     next_value BIGINT NOT NULL
-    )
-
+);
 GO
 
--- 1. NHÓM DANH MỤC & PHÂN QUYỀN
-INSERT INTO role (name) VALUES (N'ROLE_ADMIN'), (N'ROLE_STAFF'), (N'ROLE_CLIENT');
+-- ======================================================================================
+-- PHẦN 8: CHÈN DỮ LIỆU MẪU (SEED DATA)
+-- ======================================================================================
 
-INSERT INTO work_shift (name, start_time, end_time) VALUES 
-(N'Ca Sáng', '08:00:00', '12:00:00'), 
-(N'Ca Chiều', '13:00:00', '17:00:00'),
-(N'Ca Tối', '18:00:00', '22:00:00');
+-- 1. Metadata
+INSERT INTO role (name) VALUES (N'ROLE_ADMIN');
+INSERT INTO work_shift (name, start_time, end_time) VALUES (N'Ca Hành Chính', '08:00:00', '17:00:00');
 
--- 2. THUỘC TÍNH SẢN PHẨM
-INSERT INTO brand (code, name, status) VALUES ('NIKE', 'Nike', 1), ('ADIDAS', 'Adidas', 1), ('PUMA', 'Puma', 1);
-INSERT INTO category (code, name, status) VALUES ('SNEAKER', N'Giày Thể Thao', 1), ('RUNNING', N'Giày Chạy Bộ', 1), ('SANDAL', N'Sandal', 1);
-INSERT INTO origin (code, name, status) VALUES ('VN', N'Việt Nam', 1), ('USA', N'Mỹ', 1), ('CN', N'Trung Quốc', 1);
-INSERT INTO size (code, name, status) VALUES ('S39', '39', 1), ('S40', '40', 1), ('S41', '41', 1);
-INSERT INTO color (code, name, status) VALUES ('RED', N'Đỏ', 1), ('BLUE', N'Xanh Dương', 1), ('BLACK', N'Đen', 1);
+-- 2. Con người
+INSERT INTO employee (id_workshift, id_role, code, last_name, first_name, email, phone_number, gender, birthday, account, password, salary, status) 
+VALUES (1, 1, 'NV0001', N'Nguyễn Mạnh', N'Tú', 'admin@architect.com', '0988888888', 1, '2000-01-01', 'admin', '123456', 50000000, 1);
 
--- 3. NHÂN VIÊN & KHÁCH HÀNG
-INSERT INTO employee (id_workshift, id_role, code, last_name, first_name, email, phone_number, gender, birthday, account, password, salary, status) VALUES 
-(1, 1, 'NV001', N'Nguyễn', N'Văn A', 'admin@gmail.com', '0911111111', 1, '1990-01-01', 'admin', '123456', 20000000, 1),
-(2, 2, 'NV002', N'Trần', N'Thị B', 'staff@gmail.com', '0922222222', 0, '1995-05-05', 'staff', '123456', 10000000, 1),
-(3, 3, 'NV003', N'Lê', N'Văn C', 'warehouse@gmail.com', '0933333333', 1, '1992-10-10', 'warehouse', '123456', 12000000, 1);
+INSERT INTO customer (code, last_name, first_name, email, phone_number, gender, birthday, account, password, status) 
+VALUES ('KH0001', N'Trần', N'Khách Hàng', 'khachhang@gmail.com', '0911112222', 0, '1995-05-15', 'khachhang', '123456', 1);
 
-INSERT INTO customer (code, last_name, first_name, email, phone_number, gender, birthday, account, password, status) VALUES 
-('KH001', N'Phạm', N'Hùng', 'hung@gmail.com', '0988888888', 1, '1998-12-12', 'hungpham', '123456', 1),
-('KH002', N'Đỗ', N'Lan', 'lan@gmail.com', '0977777777', 0, '2000-01-01', 'landtt', '123456', 1),
-('KH003', N'Vũ', N'Nam', 'nam@gmail.com', '0966666666', 1, '1997-06-06', 'namvu', '123456', 1);
+INSERT INTO address (id_customer, consignee_name, consignee_phone, city, ward, street_detail) 
+VALUES (1, N'Trần Khách Hàng', '0911112222', N'Hà Nội', N'Cầu Giấy', N'Số 1 Tôn Thất Thuyết');
 
-INSERT INTO address (id_customer, consignee_name, consignee_phone, city, ward, street_detail) VALUES 
-(1, N'Phạm Hùng', '0988888888', N'Hà Nội', N'Cầu Giấy', N'Số 1 Xuân Thủy'),
-(2, N'Đỗ Lan', '0977777777', N'Hồ Chí Minh', N'Quận 1', N'100 Lê Lợi'),
-(3, N'Vũ Nam', '0966666666', N'Đà Nẵng', N'Hải Châu', N'50 Phan Chu Trinh');
+-- 3. Cấu hình sản phẩm
+INSERT INTO brand (code, name, status) VALUES ('BR001', 'Nike', 1);
+INSERT INTO category (code, name, status) VALUES ('CAT01', 'Sneaker', 1);
+INSERT INTO origin (code, name, status) VALUES ('ORG01', 'Vietnam', 1);
+INSERT INTO size (code, name, status) VALUES ('SZ40', 'Size 40', 1);
+INSERT INTO color (code, name, status) VALUES ('CL01', 'Black', 1);
 
--- 4. SẢN PHẨM & BIẾN THỂ
-INSERT INTO product (id_brand, id_category, id_origin, code, name, status) VALUES 
-(1, 1, 1, 'PROD001', N'Nike Air Max 2024', 1),
-(2, 1, 2, 'PROD002', N'Adidas Ultraboost', 1),
-(3, 2, 3, 'PROD003', N'Puma Nitro Chạy', 1);
+-- 4. Hàng hóa thực thể
+INSERT INTO product (id_brand, id_category, id_origin, code, name, status) 
+VALUES (1, 1, 1, 'SP0001', 'Nike Air Max 2026', 1);
 
-INSERT INTO product_detail (id_product, id_color, id_size, code, name, price, quantity, status) VALUES 
-(1, 1, 1, 'SKU001', N'Nike Air Max Đỏ 39', 3500000, 100, 1),
-(2, 2, 2, 'SKU002', N'Adidas Ultraboost Xanh 40', 4200000, 50, 1),
-(3, 3, 3, 'SKU003', N'Puma Nitro Đen 41', 2800000, 80, 1);
+INSERT INTO product_detail (id_product, id_color, id_size, code, name, price, quantity, status) 
+VALUES (1, 1, 1, 'SP0001-CL01-SZ40', 'Nike Air Max 2026 - Black - 40', 2500000, 100, 1);
 
--- 5. KHUYẾN MÃI
-INSERT INTO voucher (code, name, min_order_value, max_discount_value, start_date, end_date, value, type, quantity, status) VALUES 
-('Giam20k', N'Giảm 20k', 200000, 20000, '2024-01-01', '2026-12-31', 20000, 0, 1000, 1),
-('Giam10%', N'Giảm 10%', 500000, 100000, '2024-01-01', '2026-12-31', 10, 1, 500, 1),
-('VipOnly', N'Voucher VIP', 1000000, 200000, '2024-01-01', '2026-12-31', 15, 1, 100, 1);
+-- 5. Marketing
+INSERT INTO voucher (code, name, min_order_value, max_discount_value, start_date, end_date, value, quantity, type, status) 
+VALUES ('SALE100K', N'Giảm 100K Đơn 1 Triệu', 1000000, 100000, '2026-01-01', '2026-12-31', 100000, 50, 0, 1);
 
-INSERT INTO promotion (code, name, value, start_date, end_date, status) VALUES 
-('KM_HE', N'Khuyến mãi Hè', 10, '2024-06-01', '2026-08-31', 1),
-('KM_TET', N'Khuyến mãi Tết', 20, '2024-12-01', '2026-02-01', 1),
-('KM_BLACKFRI', N'Black Friday', 30, '2024-11-20', '2026-11-30', 1);
+INSERT INTO promotion (code, name, value, start_date, end_date, status) 
+VALUES ('SUMMER26', N'Khuyến mãi hè 2026', 10, '2026-05-01', '2026-08-31', 1);
 
--- 6. ĐƠN HÀNG & GIAO DỊCH
-INSERT INTO orders (id_customer, id_employee, id_voucher, code, total_money, total_quantity, final_amount, status) VALUES 
-(1, 2, 1, 'ORD001', 3500000, 1, 3480000, 3), -- Hoàn thành
-(2, 2, NULL, 'ORD002', 4200000, 1, 4200000, 0), -- Chờ xác nhận
-(3, NULL, 2, 'ORD003', 2800000, 1, 2520000, 1); -- Đã xác nhận
+INSERT INTO product_promotion (id_product, id_promotion) VALUES (1, 1);
 
-INSERT INTO order_detail (id_order, id_product_detail, price, quantity, total_price) VALUES 
-(1, 1, 3500000, 1, 3500000),
-(2, 2, 4200000, 1, 4200000),
-(3, 3, 2800000, 1, 2800000);
+-- 6. Giao dịch
+INSERT INTO orders (id_customer, id_employee, id_voucher, code, order_type, total_money, total_quantity, final_amount, status) 
+VALUES (1, 1, 1, 'ORD0001', 'ONLINE', 2500000, 1, 2400000, 1);
 
-INSERT INTO payment (id_order, amount, payment_method, status, transaction_code) VALUES 
-(1, 3480000, 0, 1, 'CASH_001'),
-(2, 0, 1, 0, NULL),
-(3, 2520000, 1, 1, 'BANK_VNP_001');
+-- Lưu vết lịch sử khi vừa tạo đơn (Nháp -> Chờ xác nhận)
+INSERT INTO order_status_history (id_order, id_employee, old_status, new_status, note) 
+VALUES (1, 1, NULL, 1, N'Khởi tạo đơn hàng trực tuyến');
 
--- 7. GIỎ HÀNG & REVIEW
-INSERT INTO cart (id_customer) VALUES (1), (2), (3);
-INSERT INTO cart_detail (id_cart, id_product_detail, quantity) VALUES (1, 2, 1), (2, 3, 2), (3, 1, 1);
+INSERT INTO order_detail (id_order, id_product_detail, price, quantity, total_price) 
+VALUES (1, 1, 2500000, 1, 2500000);
 
-INSERT INTO product_review (id_customer, id_product, id_order, rating, comment, status) VALUES 
-(1, 1, 1, 5, N'Giày rất đẹp, giao nhanh!', 1),
-(2, 2, NULL, 4, N'Đi khá êm chân', 1),
-(3, 3, 3, 5, N'Hàng chính hãng, tuyệt vời', 1);
+INSERT INTO payment (id_order, amount, payment_method, status) 
+VALUES (1, 2400000, 1, 0); -- 1 = VNPAY, 0 = Chờ thanh toán
 
-ALTER TABLE orders 
-ADD order_type VARCHAR(20) DEFAULT 'ONLINE';
+-- 7. Tương tác
+INSERT INTO cart (id_customer) VALUES (1);
+INSERT INTO cart_detail (id_cart, id_product_detail, quantity) VALUES (1, 1, 1);
+INSERT INTO product_review (id_customer, id_product, id_order, rating, comment, status) 
+VALUES (1, 1, 1, 5, N'Giày rất êm, giao hàng nhanh', 1);
 
-ALTER TABLE payment 
-ADD amount_tendered DECIMAL(19, 2) DEFAULT 0,
-    change_amount DECIMAL(19, 2) DEFAULT 0;
+-- 8. Bộ đếm
+INSERT INTO system_sequence (prefix, next_value) VALUES ('ORD', 2);
 GO

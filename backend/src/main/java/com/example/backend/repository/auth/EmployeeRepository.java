@@ -20,4 +20,12 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer> { /
     // BẮT BUỘC PHẢI CÓ ENTITY GRAPH ĐỂ KÉO QUYỀN LÚC ĐĂNG NHẬP
     @EntityGraph(attributePaths = {"role"})
     Optional<Employee> findByEmail(String email);
+
+    boolean existsByAccount(String account);
+    boolean existsByEmail(String email);
+    boolean existsByCode(String code); // Mã NV thường quan trọng
+
+    boolean existsByAccountAndIdNot(String account, Integer id);
+    boolean existsByEmailAndIdNot(String email, Integer id);
+    boolean existsByCodeAndIdNot(String code, Integer id);
 }

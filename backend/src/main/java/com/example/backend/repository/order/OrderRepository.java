@@ -14,4 +14,5 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     Optional<Order> findWithRelationsById(Integer id);
 
     List<Order> findByOrderTypeAndStatusOrderByCreatedAtDesc(String orderType, Integer status);
+    Optional<Order> findByCode(String code);
 }

@@ -5,12 +5,15 @@ import java.math.BigDecimal;
 
 @Data
 public class POSCheckoutDTO {
-    // ID của đơn hàng nháp đang mở
-    private Integer orderId;
-    private Integer customerId;
-    private String paymentMethod;
-    private BigDecimal amountTendered;
-    private String note;
     private String customerName;
-    private String customerPhone;
+    private String note;
+    private Integer voucherId;
+
+    // Các trường mới bổ sung từ giao diện
+    private String paymentMethod; // "CASH" hoặc "VNPAY"
+    private String deliveryType;  // "DIRECT" hoặc "SHIPPING"
+    private String shippingAddress;
+    private BigDecimal amountTendered; // Tiền khách đưa
+    private BigDecimal changeAmount;   // Tiền thối lại
+    private BigDecimal shippingFee;
 }

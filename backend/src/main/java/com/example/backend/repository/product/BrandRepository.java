@@ -11,4 +11,6 @@ public interface BrandRepository extends Repository<Brand, Integer> {
     Brand save(Brand brand);
     List<Brand> findAll();
     Optional<Brand> findById(Integer id);
+    boolean existsByName(String name);
+    boolean existsByNameAndIdNot(String name, Integer id);
 }

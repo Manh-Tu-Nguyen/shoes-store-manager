@@ -2,13 +2,13 @@ package com.example.backend.repository.product;
 
 import com.example.backend.entity.product.ProductDetail;
 import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.repository.Repository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
 
 @org.springframework.stereotype.Repository
-public interface ProductDetailRepository extends Repository<ProductDetail, Integer> {
+public interface ProductDetailRepository extends JpaRepository<ProductDetail, Integer> {
 
     ProductDetail save(ProductDetail productDetail);
 
@@ -25,4 +25,8 @@ public interface ProductDetailRepository extends Repository<ProductDetail, Integ
 
     @EntityGraph(attributePaths = {"product", "color", "size"})
     Optional<ProductDetail> findByCode(String code);
+    // Kiểm tra trùng tổ hợp Product + Color + Size (Khóa ngoại)
+    boolean existsByProductIdAndColorIdAndSizeId(Integer productId, Integer colorId, Integer sizeId);
+    // Kiểm tra trùng cho Update (Trừ chính nó ra)
+    boolean existsByProductIdAndColorIdAndSizeIdAndIdNot(Integer productId, Integer colorId, Integer sizeId, Integer id);
 }

@@ -11,4 +11,6 @@ public interface CategoryRepository extends Repository<Category, Integer> {
     Category save(Category category);
     List<Category> findAll();
     Optional<Category> findById(Integer id);
+    boolean existsByName(String name);
+    boolean existsByNameAndIdNot(String name, Integer id);
 }

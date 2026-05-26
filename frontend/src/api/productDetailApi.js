@@ -2,6 +2,7 @@ import axiosInstance from './axios';
 
 const productDetailApi = {
   // === API BẢO MẬT (Dành cho Admin) ===
+  getAllDetails: () => axiosInstance.get('/product-details'),
   getDetailById: (id) => axiosInstance.get(`/product-details/${id}`),
   getDetailsByAdmin: (productId) => axiosInstance.get(`/product-details/product/${productId}`),
   createDetail: (payload) => axiosInstance.post('/product-details', payload),

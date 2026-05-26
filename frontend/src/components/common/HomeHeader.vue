@@ -33,11 +33,11 @@
                 <aside class="flex items-center justify-end space-x-4 w-full md:w-auto mt-2 md:mt-0">
                     
                     <router-link to="/cart" class="relative p-2 text-gray-700 hover:text-pink-600" aria-label="Cart">
-                        <Icon icon="mdi:cart-outline" class="w-6 h-6" />
-                        <span class="absolute -top-1 -right-1 bg-pink-600 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
-                            
-                        </span>
-                    </router-link>
+    <Icon icon="mdi:cart-outline" class="w-6 h-6" />
+    <span class="absolute -top-1 -right-1 bg-pink-600 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+        0 
+    </span>
+</router-link>
 
                     <div class="relative group">
                         <router-link v-if="!authStore.isLoggedIn" to="/login" 

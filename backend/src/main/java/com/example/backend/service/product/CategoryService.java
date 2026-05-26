@@ -20,16 +20,13 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final com.example.backend.service.code.SequenceGeneratorService sequenceGeneratorService;
 
-
     public List<CategoryDTO> getAllCategorys() {
-        return categoryRepository.findAll().stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+        return categoryRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
     public CategoryDTO getCategoryById(Integer id) {
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy thương hiệu với ID: " + id));
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy danh mục với ID: " + id));
         return mapToDTO(category);
     }
 
@@ -43,30 +40,40 @@ public class CategoryService {
         dto.setUpdatedAt(entity.getUpdatedAt());
         return dto;
     }
-    @Transactional
-    public CategoryDTO update(Integer id, CategoryDTO dto) {
-        Category entity = categoryRepository.findById(id)
-                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy!"));
-        entity.setName(dto.getName());
-        entity.setStatus(dto.getStatus());
-        return mapToDTO(categoryRepository.save(entity));
-    }
+
     @Transactional
     public CategoryDTO create(CategoryDTO dto) {
+        if (categoryRepository.existsByName(dto.getName().trim())) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Tên danh mục đã tồn tại trong hệ thống!");
+        }
+
         Category entity = new Category();
-        entity.setName(dto.getName());
+        entity.setName(dto.getName().trim());
         entity.setStatus(dto.getStatus());
-        // GỌI SINH MÃ TỰ ĐỘNG Ở ĐÂY
-        String autoCode = sequenceGeneratorService.generateCode(CodeType.CATEGORY);
-        entity.setCode(autoCode);
+        entity.setCode(sequenceGeneratorService.generateCode(CodeType.CATEGORY));
 
         return mapToDTO(categoryRepository.save(entity));
     }
+
+    @Transactional
+    public CategoryDTO update(Integer id, CategoryDTO dto) {
+        Category entity = categoryRepository.findById(id)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy danh mục!"));
+
+        if (categoryRepository.existsByNameAndIdNot(dto.getName().trim(), id)) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Tên danh mục này đã được sử dụng!");
+        }
+
+        entity.setName(dto.getName().trim());
+        entity.setStatus(dto.getStatus());
+        return mapToDTO(categoryRepository.save(entity));
+    }
+
     @Transactional
     public void delete(Integer id) {
         Category entity = categoryRepository.findById(id)
-                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy!"));
-        entity.setStatus(false); // Xóa mềm
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy danh mục!"));
+        entity.setStatus(false);
         categoryRepository.save(entity);
     }
 }

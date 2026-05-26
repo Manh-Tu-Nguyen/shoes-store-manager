@@ -1,23 +1,16 @@
 <template>
   <div class="product-detail-page container mx-auto p-4">
-    <button @click="goBack" class="back-btn mb-6">
-      &larr; Tiếp tục mua sắm
-    </button>
+    <button @click="goBack" class="back-btn mb-6">&larr; Tiếp tục mua sắm</button>
 
     <div v-if="productStore.loading" class="text-center py-10">Đang tải chi tiết sản phẩm...</div>
 
     <div v-else class="detail-grid">
-      
       <div class="image-gallery">
-        <img 
-          :src="currentImage" 
-          alt="Ảnh sản phẩm" 
-          class="main-image"
-        />
+        <img :src="currentImage" alt="Ảnh sản phẩm" class="main-image" />
       </div>
 
       <div class="product-info">
-        <h1 class="product-title">Giày Thể Thao Cao Cấp</h1>
+        <h1 class="product-title">{{ productName }}</h1>
         
         <div class="price-section">
           <span class="price" v-if="selectedVariant">
@@ -54,10 +47,7 @@
               <input type="number" v-model.number="selectedQty" @blur="validateQty" />
               <button @click="increaseQty" :disabled="selectedQty >= Math.min(20, availableQty)">+</button>
             </div>
-            
-            <span class="stock-text" v-if="availableQty <= 20">
-              Còn {{ availableQty }} sản phẩm
-            </span>
+            <span class="stock-text" v-if="availableQty <= 20">Còn {{ availableQty }} sản phẩm</span>
           </div>
         </div>
 
@@ -65,28 +55,14 @@
           <span class="text-danger font-bold">Sản phẩm này tạm thời hết hàng.</span>
         </div>
 
-        <div class="zalo-wholesale-alert" v-if="selectedQty === 20">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Zalo_Logo.svg/512px-Zalo_Logo.svg.png" alt="Zalo" class="zalo-icon"/>
-          <span>Nếu quý khách muốn mua số lượng lớn hãy <a href="https://zalo.me/0123456789" target="_blank">liên hệ Zalo</a> để được hưởng nhiều ưu đãi hơn!</span>
-        </div>
-
         <div class="action-buttons">
-          <button 
-            class="btn-add-cart" 
-            :disabled="!selectedVariant || selectedVariant.quantity === 0"
-            @click="addToCart"
-          >
+          <button class="btn-add-cart" :disabled="!selectedVariant || availableQty <= 0" @click="addToCart">
             THÊM VÀO GIỎ HÀNG
           </button>
-          <button 
-            class="btn-buy-now" 
-            :disabled="!selectedVariant || selectedVariant.quantity === 0"
-            @click="buyNow"
-          >
+          <button class="btn-buy-now" :disabled="!selectedVariant || availableQty <= 0" @click="buyNow">
             MUA NGAY
           </button>
         </div>
-        
       </div>
     </div>
   </div>
@@ -95,96 +71,90 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import Swal from 'sweetalert2';
+// --- IMPORT CÁC THÀNH PHẦN QUAN TRỌNG ---
 import { useProductStore } from '@/store/productStore';
-import { useOrderStore } from '@/store/orderStore'; // Bổ sung OrderStore
+import { useOrderStore } from '@/store/orderStore';
+import productDetailApi from '@/api/productDetailApi'; 
+import { useCartStore } from '@/store/cartStore';
+import { useAuthStore } from '@/store/authStore';// SỬA LỖI: Đã import API
 
 const route = useRoute();
 const router = useRouter();
 const productStore = useProductStore();
-const orderStore = useOrderStore(); // Khởi tạo OrderStore
-
+const orderStore = useOrderStore();
+const cartStore = useCartStore();
+const authStore = useAuthStore();
 const productId = route.params.id;
-
 const selectedVariant = ref(null);
-const selectedQty = ref(1); 
+const selectedQty = ref(1);
+const productName = ref("Giày Thể Thao Cao Cấp"); // Bạn có thể lấy từ store nếu có
+
+const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
 
 onMounted(async () => {
-  await productStore.fetchProductVariants(productId);
+  try {
+    productStore.loading = true;
+    const res = await productDetailApi.getPublicDetailsByProductId(productId);
+    productStore.productDetails = res?.data?.data || res?.data || res || [];
+  } catch (err) {
+    console.error(err);
+    Toast.fire({ icon: 'error', title: 'Không tải được chi tiết' });
+  } finally {
+    productStore.loading = false;
+  }
 });
 
-// LOGIC CÔNG THỨC ATP
 const availableQty = computed(() => {
   if (!selectedVariant.value) return 0;
-  const inStock = selectedVariant.value.quantity || 0;
-  const pending = selectedVariant.value.pendingQuantity || 0; 
-  return inStock - pending;
+  return (selectedVariant.value.quantity || 0) - (selectedVariant.value.pendingQuantity || 0);
 });
 
 const selectVariant = (variant) => {
-  const atp = variant.quantity - (variant.pendingQuantity || 0);
-  if (atp > 0) {
-    selectedVariant.value = variant;
-    selectedQty.value = 1; 
-  }
+  selectedVariant.value = variant;
+  selectedQty.value = 1;
 };
 
-const currentImage = computed(() => {
-  if (selectedVariant.value && selectedVariant.value.image) {
-    return selectedVariant.value.image;
-  }
-  return 'https://placehold.co/600x600?text=Product+Image';
-});
+const currentImage = computed(() => selectedVariant.value?.image || 'https://placehold.co/600x600');
 
-// LOGIC NÚT BẤM SỐ LƯỢNG
 const increaseQty = () => {
-  const maxAllowed = Math.min(20, availableQty.value); 
-  if (selectedQty.value < maxAllowed) {
-    selectedQty.value++;
-  }
+  const maxAllowed = Math.min(20, availableQty.value);
+  if (selectedQty.value < maxAllowed) selectedQty.value++;
 };
 
 const decreaseQty = () => {
-  if (selectedQty.value > 1) {
-    selectedQty.value--;
-  }
+  if (selectedQty.value > 1) selectedQty.value--;
 };
 
 const validateQty = () => {
   let val = selectedQty.value;
   const maxAllowed = Math.min(20, availableQty.value);
-  
   if (isNaN(val) || val < 1) val = 1;
   if (val > maxAllowed) val = maxAllowed;
-  
   selectedQty.value = val;
 };
 
 const goBack = () => router.push('/');
 
-const addToCart = () => {
-  if (!selectedVariant.value) return;
-  alert(`Đã thêm ${selectedQty.value} sản phẩm (ID: ${selectedVariant.value.id}) vào giỏ!`);
-};
-
-// --- HÀM MỚI: XỬ LÝ MUA NGAY ---
-const buyNow = () => {
+const addToCart = async () => {
   if (!selectedVariant.value || availableQty.value <= 0) return;
 
-  // Đóng gói 1 object sản phẩm để đẩy sang màn hình Checkout
+  // Gọi hàm addToCart tập trung từ Store (đã được kiến trúc rẽ nhánh Đăng nhập/Ẩn danh)
+  await cartStore.addToCart(selectedVariant.value, selectedQty.value, authStore.isLoggedIn);
+
+  Toast.fire({ icon: 'success', title: `Đã thêm ${selectedQty.value} sản phẩm vào giỏ!` });
+};
+
+const buyNow = () => {
+  if (!selectedVariant.value || availableQty.value <= 0) return;
   const checkoutItem = {
     productDetailId: selectedVariant.value.id,
-    // Tạm thời hardcode tên cha, nối với màu và size. 
-    // Sau này có API lấy Product cha thì thay thế chữ "Giày Thể Thao Cao Cấp"
-    name: `Giày Thể Thao Cao Cấp - ${selectedVariant.value.color?.name} - Size ${selectedVariant.value.size?.name}`,
+    name: `${productName.value} - ${selectedVariant.value.color?.name} - Size ${selectedVariant.value.size?.name}`,
     image: currentImage.value,
     price: selectedVariant.value.price,
     quantity: selectedQty.value
   };
-
-  // Nạp vào OrderStore (Hàm này đã được viết sẵn ở file orderStore.js)
   orderStore.setCheckoutItems([checkoutItem]);
-
-  // Chuyển hướng sang trang Thanh toán
   router.push('/checkout');
 };
 </script>

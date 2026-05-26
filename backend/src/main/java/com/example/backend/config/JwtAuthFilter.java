@@ -14,6 +14,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Collections;
 
+/**
+ * MỤC ĐÍCH KIẾN TRÚC: BỘ CHẶN TRUNG TÂM CHO LUỒNG XÁC THỰC PHI TRẠNG THÁI
+ * Chặn mọi HTTP request đi vào hệ thống để kiểm tra tính hợp lệ của JSON Web Token (JWT)
+ * và thiết lập ngữ cảnh bảo mật trong Spring Security trước khi chạm tới các Endpoints.
+ */
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -24,39 +29,29 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         try {
+            // MỤC ĐÍCH MODULE (VỪA): TRÍCH XUẤT PHƯƠNG TIỆN XÁC THỰC TỪ HTTP HEADER
             String jwt = parseJwt(request);
 
-            // TRACER 1: Kiểm tra xem Filter có nhận được vé không?
-            if (request.getRequestURI().contains("/api/customer/orders")) {
-                System.out.println("=== [DEBUG] BẮT ĐẦU LUỒNG CHECKOUT ===");
-                System.out.println("[DEBUG] Token nhận được: " + (jwt != null ? "CÓ" : "KHÔNG CÓ"));
-            }
-
+            // MỤC ĐÍCH MODULE (VỪA): XÁC THỰC CHỮ KÝ MÃ HÓA VÀ ĐỒNG BỘ THÔNG TIN TÀI KHOẢN CHÍNH
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
-
                 String email = jwtUtils.getEmailFromJwtToken(jwt);
                 Integer id = jwtUtils.getIdFromJwtToken(jwt);
                 String role = jwtUtils.getRoleFromJwtToken(jwt);
 
-                // 2. XỬ LÝ TIỀN TỐ BẰNG BIẾN TẠM (Temp variable)
                 String tempRole = (role != null && !role.trim().isEmpty()) ? role : "CUSTOMER";
-
-                // 3. KHAI BÁO BIẾN BẤT BIẾN (Effectively Final) ĐỂ TRUYỀN VÀO INNER CLASS
                 String finalRole = tempRole.startsWith("ROLE_") ? tempRole : "ROLE_" + tempRole;
 
-                if (request.getRequestURI().contains("/api/customer/orders")) {
-                    System.out.println("[DEBUG] Giải mã thành công -> Email: " + email + " | ID: " + id + " | Quyền: " + finalRole);
-                }
-
+                // MỤC ĐÍCH MODULE (VỪA): KHỞI TẠO NGỮ CẢNH TÀI KHOẢN ẢO TRÊN BỘ NHỚ RAM
                 AccountPrincipal virtualPrincipal = new AccountPrincipal() {
                     @Override public Integer getId() { return id; }
                     @Override public String getEmail() { return email; }
-                    @Override public String getRoleName() { return finalRole; } // Lỗi gạch đỏ sẽ bốc hơi lập tức
+                    @Override public String getRoleName() { return finalRole; }
                     @Override public String getPassword() { return null; }
                     @Override public String getFullName() { return null; }
                     @Override public Boolean getStatus() { return true; }
                 };
 
+                // MỤC ĐÍCH MODULE (VỪA): CẤP PHÁT NGỮ CẢNH BẢO MẬT RÀNG BUỘC THEO LUỒNG (THREAD)
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         virtualPrincipal,
                         null,
@@ -66,7 +61,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception e) {
-            System.err.println("=== [LỖI BỘ LỌC JWT] ===");
+            System.err.println("=== [XẢY RA LỖI TRONG BỘ LỌC CAN THIỆP XÁC THỰC JWT] ===");
             e.printStackTrace();
         }
 

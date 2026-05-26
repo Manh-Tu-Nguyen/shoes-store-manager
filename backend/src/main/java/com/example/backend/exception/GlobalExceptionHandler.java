@@ -12,10 +12,15 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * MỤC ĐÍCH KIẾN TRÚC (LỚN): TRẠM KIỂM SOÁT VÀ ĐÓNG GÓI LỖI TOÀN CỤC TRÊN REST API
+ * Hoạt động như một màng bọc proxy (AOP - Aspect Oriented Programming), tự động tóm sống
+ * toàn bộ các ngoại lệ tung ra từ bất kỳ Controller nào để đồng bộ cấu trúc phản hồi lỗi về Client.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // 1. Xử lý lỗi nghiệp vụ chung (Đã gộp gọn gàng, xóa hàm thừa ở cuối)
+    // MỤC ĐÍCH MODULE (VỪA): ĐỒNG BỘ NỘI DUNG LỖI NGHIỆP VỤ ĐÃ LƯỜNG TRƯỚC (APP EXCEPTION)
     @ExceptionHandler(AppException.class)
     public ResponseEntity<Map<String, Object>> handleAppException(AppException e) {
         return ResponseEntity
@@ -26,7 +31,7 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    // 2. Xử lý lỗi Validate dữ liệu đầu vào (@Valid)
+    // MỤC ĐÍCH MODULE (VỪA): GIẢI MÃ MA TRẬN LỖI VALIDATION VÀ TRẢ VỀ CẤU TRÚC KEY-VALUE CHÍNH XÁC
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException e) {
         Map<String, String> errors = new HashMap<>();
@@ -44,7 +49,7 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    // 3. Xử lý lỗi File tải lên quá lớn
+    // MỤC ĐÍCH MODULE (VỪA): CHỐNG LỖI ĐỔ VỠ HẠ TẦNG KHI TẢI FILE QUÁ DUNG LƯỢNG CHO PHÉP
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, Object>> handleMaxSizeException(MaxUploadSizeExceededException exc) {
         return ResponseEntity
@@ -55,14 +60,14 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    // 4. Xử lý lỗi trùng lặp dữ liệu trong SQL
+    // MỤC ĐÍCH MODULE (VỪA): DỊCH NGƯỢC THÔNG BÁO LỖI RÀNG BUỘC CỦA CƠ SỞ DỮ LIỆU SQL SERVER
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<?> handleDataIntegrityViolation(DataIntegrityViolationException e) {
         String message = "Dữ liệu đã tồn tại hoặc vi phạm ràng buộc dữ liệu!";
 
         if (e.getMessage().contains("UQ_Product_Size_Color")) {
             message = "Biến thể sản phẩm này (Màu + Size) đã tồn tại!";
-        } else if (e.getMessage().contains("Duplicate")) { // Từ khóa chung cho SQL Server
+        } else if (e.getMessage().contains("Duplicate")) {
             message = "Dữ liệu bị trùng lặp, vui lòng kiểm tra lại.";
         }
 
@@ -72,10 +77,10 @@ public class GlobalExceptionHandler {
         ));
     }
 
-    // 5. Trạm chốt chặn cuối cùng (Bắt mọi lỗi Runtime chưa lường trước)
+    // MỤC ĐÍCH MODULE (VỪA): TRẠM CHỐT CHẶN CUỐI CÙNG (FALLBACK CHỐNG LỘ LOG LOGIC BẢO MẬT)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleUnwantedException(Exception e) {
-        e.printStackTrace();
+        e.printStackTrace(); // Ghi vết hệ thống vào Console để lập trình viên điều tra lỗi (Debug)
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)

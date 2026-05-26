@@ -5,28 +5,25 @@ import axiosInstance from '@/api/axios';
 
 export const useProductStore = defineStore('product', {
   state: () => ({
-    // STATE CỦA SẢN PHẨM CHA
-    products: [],
-    
-    // STATE CỦA BIẾN THỂ (SKU) - BẮT BUỘC PHẢI CÓ ĐỂ KHÔNG BỊ SẬP TRANG
-    productDetails: [], 
-    
-    // DỮ LIỆU CÁC DROP-DOWN TÙY CHỌN
+    products: [],           // Dữ liệu thô từ API
+    productDetails: [],     // Biến thể (SKU)
     brands: [], 
     categories: [], 
     origins: [],
     colors: [], 
     sizes: [],
-    
     loading: false
   }),
+
   getters: {
+    // Getter chỉ dùng để đọc, không gán trực tiếp dữ liệu vào đây
     activeProducts: (state) => {
       return state.products.filter(p => p.status === true);
     }
   },
+
   actions: {
-    // 1. Tải toàn bộ thuộc tính dùng chung
+    // 1. DỮ LIỆU DÙNG CHUNG
     async fetchAllAttributes() {
       try {
         const [brandRes, catRes, originRes, colorRes, sizeRes] = await Promise.all([
@@ -36,87 +33,76 @@ export const useProductStore = defineStore('product', {
           axiosInstance.get('/colors'),
           axiosInstance.get('/sizes')
         ]);
-        
-        // CÁCH GÁN BẤT TỬ: Tự động dò tìm đúng mảng dữ liệu
-        this.brands = brandRes?.data?.data || brandRes?.data || [];
-        this.categories = catRes?.data?.data || catRes?.data || [];
-        this.origins = originRes?.data?.data || originRes?.data || [];
-        this.colors = colorRes?.data?.data || colorRes?.data || [];
-        this.sizes = sizeRes?.data?.data || sizeRes?.data || [];
+        this.brands = brandRes?.data?.data || [];
+        this.categories = catRes?.data?.data || [];
+        this.origins = originRes?.data?.data || [];
+        this.colors = colorRes?.data?.data || [];
+        this.sizes = sizeRes?.data?.data || [];
       } catch (error) {
-        console.error("Lỗi khi tải thuộc tính:", error);
+        console.error("Lỗi tải thuộc tính:", error);
       }
     },
 
-    // ==========================================
-    // MODULE 1: SẢN PHẨM CHA (PRODUCT)
-    // ==========================================
+    // 2. SẢN PHẨM (PUBLIC - Trang chủ)
     async fetchProducts() {
       this.loading = true;
       try {
-        // Thay vì gọi getAllProducts, hãy gọi getPublicProducts
-        const response = await productApi.getPublicProducts();
-        this.products = response?.data?.data || response?.data || []; 
-      } catch (error) {
-        console.error("Lỗi tải danh sách sản phẩm:", error);
+        // GỌI HÀM PUBLIC (Không cần token)
+        const res = await productApi.getAllPublic(); 
+        this.products = res?.data?.data || res?.data || [];
+      } catch (err) {
+        console.error("Lỗi tải sản phẩm công khai:", err);
       } finally {
         this.loading = false;
       }
     },
 
-    async createProduct(formData) {
-      await productApi.createProduct(formData);
+    // 3. SẢN PHẨM (ADMIN - Trang quản trị)
+    async fetchAdminProducts() {
+      this.loading = true;
+      try {
+        const res = await productApi.getAll(); // Gọi API có Token
+        this.products = res?.data?.data || res?.data || [];
+      } catch (err) {
+        console.error("Lỗi tải sản phẩm admin:", err);
+      } finally {
+        this.loading = false;
+      }
     },
 
-    async updateProduct(id, formData) {
-      await productApi.updateProduct(id, formData);
-    },
-
-    async deleteProduct(id) {
-      await productApi.deleteProduct(id);
-    },
-
-    // ==========================================
-    // MODULE 2: BIẾN THỂ SẢN PHẨM (PRODUCT DETAIL/SKU)
-    // ==========================================
+    // 4. BIẾN THỂ (SKU)
     async fetchProductVariants(productId) {
       this.loading = true;
       try {
-        // GỌI API PUBLIC thay vì API của Admin
-        const response = await productDetailApi.getPublicDetailsByProductId(productId);
+        // Dùng hàm Admin
+        const response = await productDetailApi.getDetailsByAdmin(productId);
         this.productDetails = response?.data?.data || response?.data || [];
       } catch (error) {
-        console.error("Lỗi khi tải danh sách biến thể:", error);
+        console.error("Lỗi tải biến thể:", error);
+        this.productDetails = [];
       } finally {
         this.loading = false;
       }
     },
 
+    // 5. CRUD CƠ BẢN
+    async createProduct(formData) {
+      return await productApi.create(formData);
+    },
+    async updateProduct(id, formData) {
+      return await productApi.update(id, formData);
+    },
+    async deleteProduct(id) {
+      return await productApi.delete(id);
+    },
     async createProductDetail(formData) {
-      try {
-        const response = await productDetailApi.createDetail(formData);
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      return await productDetailApi.createDetail(formData);
     },
-
     async updateProductDetail(id, formData) {
-      try {
-        const response = await productDetailApi.updateDetail(id, formData);
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      return await productDetailApi.updateDetail(id, formData);
     },
-
     async deleteProductDetail(id) {
-      try {
-        const response = await productDetailApi.deleteDetail(id);
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      return await productDetailApi.deleteDetail(id);
     }
   }
 });

@@ -76,4 +76,18 @@ public class OrderController {
         OrderDTO result = orderService.updateOrderStatus(id, newStatus);
         return ResponseEntity.ok(Map.of("success", true, "data", result));
     }
+    @GetMapping("/{orderId}/timeline")
+    public ResponseEntity<Map<String, Object>> getOrderTimeline(@PathVariable Integer orderId) {
+        return ResponseEntity.ok(Map.of("success", true, "data", orderService.getOrderTimeline(orderId)));
+    }
+
+    // Cập nhật API Update Status có thêm tham số note
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Map<String, Object>> updateStatus(
+            @PathVariable Integer id,
+            @RequestParam Integer newStatus,
+            @RequestParam(required = false) String note) { // Nhận thêm lý do đổi trạng thái
+        OrderDTO result = orderService.updateOrderStatus(id, newStatus, note);
+        return ResponseEntity.ok(Map.of("success", true, "data", result));
+    }
 }

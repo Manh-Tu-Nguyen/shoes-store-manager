@@ -91,6 +91,7 @@ onMounted(() => {
 const goToDetail = (productId) => {
   router.push(`/product/${productId}`);
 };
+
 </script>
 
 <style scoped>

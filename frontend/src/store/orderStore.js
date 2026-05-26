@@ -1,42 +1,50 @@
-// src/store/orderStore.js
 import { defineStore } from 'pinia';
 import orderApi from '@/api/orderApi';
+// BỔ SUNG CHÍ MẠNG: Import authStore để phục vụ cơ chế rẽ nhánh tạo đơn
+import { useAuthStore } from '@/store/authStore'; 
 
 export const useOrderStore = defineStore('order', {
   state: () => ({
-    // Vì chưa có Giỏ hàng, ta giả lập 1 mảng chứa các món khách vừa bấm "Mua ngay"
+    // Chứa các món hàng được chọn từ giỏ hàng hoặc từ nút "Mua ngay" truyền sang
     checkoutItems: [], 
     
-    // Form thông tin khách hàng
+    // Form thông tin khách nhận hàng
     shippingInfo: {
       consigneeName: '',
       consigneePhone: '',
       consigneeAddress: ''
     },
     
-    paymentMethod: 'COD', // Mặc định là Thanh toán khi nhận hàng
+    paymentMethod: 'COD', // Mặc định: Thanh toán khi nhận hàng
     loading: false,
   }),
 
   getters: {
     totalQuantity: (state) => state.checkoutItems.reduce((sum, item) => sum + item.quantity, 0),
     totalMoney: (state) => state.checkoutItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-    shippingFee: () => 30000, // Hardcode 30k phí ship tạm thời
+    shippingFee: () => 30000, // Tạm thời hardcode phí vận chuyển 30k
     finalAmount() {
       return this.totalMoney + this.shippingFee;
     }
   },
 
   actions: {
-    // Hàm này dùng để trang ProductDetail đẩy dữ liệu sang trước khi chuyển trang
+    /**
+     * Hàm nhận dữ liệu bàn giao từ trang Giỏ hàng hoặc Chi tiết sản phẩm
+     */
     setCheckoutItems(items) {
       this.checkoutItems = items;
     },
 
+    /**
+     * Logic tạo đơn hàng tổng hợp: Tự động phân luồng Đăng nhập / Ẩn danh
+     */
     async submitOrder() {
       this.loading = true;
+      const authStore = useAuthStore(); // Khởi tạo instance an toàn sau khi đã import
+
       try {
-        // ĐÓNG GÓI PAYLOAD CHUẨN XÁC VỚI WRAPPER "CreateOrderRequest" CỦA JAVA
+        // Đóng gói Payload khớp 100% với cấu trúc class "CreateOrderRequest" của Spring Boot
         const payload = {
           order: {
             consigneeName: this.shippingInfo.consigneeName,
@@ -46,19 +54,29 @@ export const useOrderStore = defineStore('order', {
             totalQuantity: this.totalQuantity,
             shippingFee: this.shippingFee,
             finalAmount: this.finalAmount,
-            status: 1 // 1: Chờ xác nhận (Đơn Online)
+            status: 1 // 1: Trạng thái chờ xác nhận mặc định của đơn Online
           },
           details: this.checkoutItems.map(item => ({
             productDetailId: item.productDetailId,
-            price: item.price, // Gửi lên để qua vòng Validate @NotNull của DTO, backend sẽ tự lấy giá chuẩn từ DB đè lên để bảo mật
+            price: item.price, 
             quantity: item.quantity
           }))
         };
 
-        const response = await orderApi.createOrder(payload);
-        return response.data; // Trả data về cho Vue xử lý chuyển hướng
+        let response;
+        
+        // KIẾN TRÚC RẼ NHÁNH ĐIỀU PHỐI (Payload Rerouting)
+        if (authStore.isLoggedIn) {
+          // Khách đã login: Đẩy vào API bảo mật, Spring Boot tự lấy ID qua JWT Token
+          response = await orderApi.createOrderSecure(payload);
+        } else {
+          // Khách ẩn danh: Đẩy vào API Public, tạo hóa đơn không có ID khách hàng
+          response = await orderApi.createOrder(payload);
+        }
+
+        return response.data || response; 
       } catch (error) {
-        console.error("Lỗi khi tạo đơn hàng:", error);
+        console.error("Lỗi hệ thống khi tạo đơn hàng:", error);
         throw error;
       } finally {
         this.loading = false;

@@ -1,5 +1,6 @@
 package com.example.backend.controller.product;
 
+import com.example.backend.dto.product.ProductDTO;
 import com.example.backend.dto.product.ProductDetailDTO;
 import com.example.backend.service.product.ProductDetailService;
 import jakarta.validation.Valid;
@@ -17,7 +18,11 @@ import java.util.Map;
 public class ProductDetailController {
 
     private final ProductDetailService productDetailService;
-
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> getAllProducts() {
+        List<ProductDetailDTO> data = productDetailService.getAllProductsDetails();
+        return ResponseEntity.ok(Map.of("success", true, "data", data));
+    }
     // 1. Lấy 1 biến thể cụ thể
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getProductDetailById(@PathVariable Integer id) {

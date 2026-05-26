@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-// ĐÂY LÀ ĐIỂM CỐT LÕI: Đường dẫn này bị khóa bởi SecurityConfig
 @RequestMapping("/api/customer/orders")
 @RequiredArgsConstructor
 public class CustomerOrderController {

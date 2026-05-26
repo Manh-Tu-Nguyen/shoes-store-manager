@@ -21,9 +21,7 @@ public class BrandService {
     private final BrandRepository brandRepository;
 
     public List<BrandDTO> getAllBrands() {
-        return brandRepository.findAll().stream()
-                .map(this::mapToDTO)
-                .collect(Collectors.toList());
+        return brandRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
     public BrandDTO getBrandById(Integer id) {
@@ -32,7 +30,6 @@ public class BrandService {
         return mapToDTO(brand);
     }
 
-    // Hàm Map nội bộ giúp code tái sử dụng tốt hơn
     private BrandDTO mapToDTO(Brand entity) {
         BrandDTO dto = new BrandDTO();
         dto.setId(entity.getId());
@@ -43,23 +40,33 @@ public class BrandService {
         dto.setUpdatedAt(entity.getUpdatedAt());
         return dto;
     }
+
     @Transactional
     public BrandDTO create(BrandDTO dto) {
-        Brand entity = new Brand();
-        entity.setName(dto.getName());
-        entity.setStatus(dto.getStatus());
-        // GỌI SINH MÃ TỰ ĐỘNG Ở ĐÂY
-        String autoCode = sequenceGeneratorService.generateCode(CodeType.BRAND);
-        entity.setCode(autoCode);
+        // KIỂM TRA TRÙNG TÊN KHI TẠO MỚI
+        if (brandRepository.existsByName(dto.getName().trim())) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Tên thương hiệu đã tồn tại trong hệ thống!");
+        }
 
+        Brand entity = new Brand();
+        entity.setName(dto.getName().trim());
+        entity.setStatus(dto.getStatus());
+        entity.setCode(sequenceGeneratorService.generateCode(CodeType.BRAND));
 
         return mapToDTO(brandRepository.save(entity));
     }
+
     @Transactional
     public BrandDTO update(Integer id, BrandDTO dto) {
         Brand entity = brandRepository.findById(id)
-                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy!"));
-        entity.setName(dto.getName());
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy thương hiệu!"));
+
+        // KIỂM TRA TRÙNG TÊN KHI CẬP NHẬT (Bỏ qua chính nó)
+        if (brandRepository.existsByNameAndIdNot(dto.getName().trim(), id)) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "Tên thương hiệu này đã được sử dụng bởi một bản ghi khác!");
+        }
+
+        entity.setName(dto.getName().trim());
         entity.setStatus(dto.getStatus());
         return mapToDTO(brandRepository.save(entity));
     }
@@ -67,8 +74,8 @@ public class BrandService {
     @Transactional
     public void delete(Integer id) {
         Brand entity = brandRepository.findById(id)
-                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy!"));
-        entity.setStatus(false); // Xóa mềm
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy thương hiệu!"));
+        entity.setStatus(false);
         brandRepository.save(entity);
     }
 }
